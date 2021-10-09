@@ -1,5 +1,6 @@
-import { Logger } from '@nestjs/common'
 import { Command, CommandRunner, Option } from 'nest-commander'
+import { Logger } from 'winston'
+import { Inject } from '@nestjs/common'
 import { ScraperService } from '../scraper/scraper.service'
 
 interface BasicCommandOptions {
@@ -9,8 +10,11 @@ interface BasicCommandOptions {
 
 @Command({ name: 'collect', description: 'A parameter parse' })
 export class CollectCommand implements CommandRunner {
-  private readonly logger = new Logger(CollectCommand.name)
-  constructor(private readonly scapperService: ScraperService) {}
+  constructor(
+    @Inject('winston')
+    private readonly logger: Logger,
+    private readonly scapperService: ScraperService,
+  ) {}
 
   async run(
     passedParam: string[],
@@ -38,14 +42,14 @@ export class CollectCommand implements CommandRunner {
   }
 
   scrapeSite(param: string[], option: string, limit: number): void {
-    this.logger.log(`scape site: ${option}`)
+    this.logger.info(`scape site: ${option}`)
     switch (option) {
       case 'anidb':
-        this.logger.log('will collect anidb')
+        this.logger.info('will collect anidb')
         this.scapperService.collectAnidb(param)
         break
       case 'myanimelist':
-        this.logger.log('will collect myanimelist')
+        this.logger.info('will collect myanimelist')
         this.scapperService.collectMyanimelist(param, limit)
         break
       /*case 'mal':

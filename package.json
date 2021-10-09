@@ -32,10 +32,12 @@
     "@types/puppeteer": "^5.4.4",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
+    "colors": "^1.4.0",
     "date-fns": "^2.25.0",
     "dotenv": "^10.0.0",
     "lodash": "^4.17.21",
     "nest-commander": "^2.3.0",
+    "nest-winston": "^1.6.1",
     "pg": "^8.7.1",
     "pidusage": "^2.0.21",
     "puppeteer": "^10.4.0",
@@ -50,7 +52,8 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "swagger-ui-express": "^4.1.6",
-    "typeorm": "^0.2.38"
+    "typeorm": "^0.2.38",
+    "winston": "^3.3.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",

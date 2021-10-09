@@ -1,17 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import * as QueryString from 'query-string'
 import { ElementHandle } from 'puppeteer'
 import { parse as ParseDate } from 'date-fns'
+import { Logger } from 'winston'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
 import { AnimeService } from '../anime/anime.service'
 import { IAnimeRequest } from './interfaces'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
-import { IMyanimelist, RECORD_TYPE } from './repository/interface'
+import { RECORD_TYPE } from './repository/interface'
 
 @Injectable()
 export class MyanimelistService {
-  private readonly logger = new Logger(MyanimelistService.name)
   baseURL = 'https://myanimelist.net'
   animeRequest: IAnimeRequest = {
     basePath: '/topanime.php',
@@ -20,6 +20,8 @@ export class MyanimelistService {
     },
   }
   constructor(
+    @Inject('winston')
+    private readonly logger: Logger,
     private readonly puppeteerService: PuppeteerService,
     private readonly myanimelistlinkRepo: MyanimelistlinkRepository,
     private readonly animeService: AnimeService,

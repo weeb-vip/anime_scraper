@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
+import { Logger } from 'winston'
 import { AnidbService } from '../anidb/anidb.service'
 import { MyanimelistService } from '../myanimelist/myanimelist.service'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 
 @Injectable()
 export class ScraperService {
-  private readonly logger = new Logger(ScraperService.name)
   constructor(
+    @Inject('winston')
+    private readonly logger: Logger,
     private readonly puppeteerService: PuppeteerService,
     private readonly anidbService: AnidbService,
     private readonly myanimelistService: MyanimelistService,
