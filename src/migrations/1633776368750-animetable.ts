@@ -16,7 +16,7 @@ export class animetable1633776368750 implements MigrationInterface {
           {
             name: 'title_en',
             type: 'varchar',
-            isNullable: false,
+            isNullable: true,
           },
           {
             name: 'title_jp',
