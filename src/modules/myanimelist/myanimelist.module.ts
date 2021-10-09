@@ -27,7 +27,7 @@ import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
         new transports.Console({
           level: 'debug',
           format: format.combine(
-            alignColorsAndTime(MyanimelistModule.name, 'yellow'),
+            alignColorsAndTime(MyanimelistModule.name, 'magenta'),
           ),
         }),
       ],

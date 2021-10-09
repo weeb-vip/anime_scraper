@@ -26,7 +26,7 @@ import { ScraperService } from './scraper.service'
         new transports.Console({
           level: 'debug',
           format: format.combine(
-            alignColorsAndTime(ScraperModule.name, 'yellow'),
+            alignColorsAndTime(ScraperModule.name, 'magenta'),
           ),
         }),
       ],

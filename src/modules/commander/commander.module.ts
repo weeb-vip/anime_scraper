@@ -25,7 +25,7 @@ import { CollectCommand } from './collect.command'
         new transports.Console({
           level: 'debug',
           format: format.combine(
-            alignColorsAndTime(ScraperCommandModule.name, 'yellow'),
+            alignColorsAndTime(ScraperCommandModule.name, 'magenta'),
           ),
         }),
       ],
