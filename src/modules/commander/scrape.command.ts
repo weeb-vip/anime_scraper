@@ -6,6 +6,7 @@ import { ScraperService } from '../scraper/scraper.service'
 interface BasicCommandOptions {
   site: string
   limit?: number
+  headless?: boolean
 }
 
 @Command({ name: 'scrape', description: 'A parameter parse' })
@@ -21,7 +22,12 @@ export class ScraperCommand implements CommandRunner {
     options?: BasicCommandOptions,
   ): Promise<void> {
     if (options?.site !== undefined && options?.site !== null) {
-      this.scrapeSite(passedParam, options.site, options?.limit)
+      this.scrapeSite(
+        passedParam,
+        options.site,
+        options?.limit,
+        !!options?.headless,
+      )
     }
   }
 
@@ -41,14 +47,27 @@ export class ScraperCommand implements CommandRunner {
     return parseInt(val, 10)
   }
 
-  scrapeSite(param: string[], option: string, limit): void {
+  @Option({
+    flags: '-h, --headless',
+    description: 'Run headless',
+  })
+  getHeadless(val: string): boolean {
+    return true
+  }
+
+  scrapeSite(
+    param: string[],
+    option: string,
+    limit: number,
+    headless: boolean,
+  ): void {
     this.logger.info(`scape site: ${option}`)
     switch (option) {
       case 'anidb':
         this.scapperService.scrapeAnidb(param)
         break
       case 'myanimelist':
-        this.scapperService.scrapeMyAnimeList(param, limit)
+        this.scapperService.scrapeMyAnimeList(param, limit, headless)
         break
 
       /*case 'mal':

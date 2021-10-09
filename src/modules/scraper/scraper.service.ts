@@ -85,8 +85,8 @@ export class ScraperService {
     return 'ok'
   }
 
-  async scrapeMyAnimeList(param: string[], limit: number) {
-    await this.puppeteerService.setup(limit)
+  async scrapeMyAnimeList(param: string[], limit: number, headless: boolean) {
+    await this.puppeteerService.setup(limit, headless)
     await this.puppeteerService
       .getManager()
       .task(

@@ -32,12 +32,12 @@ export class MyanimelistService {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
     await page.setRequestInterception(true)
-    page.on('request', (request: any): void => {
+    /*page.on('request', (request: any): void => {
       if (request.resourceType() === 'script') request.abort()
       else {
         request.continue()
       }
-    })
+    })*/
     await page.goto(url)
     this.logger.debug(`Page ${data} loaded`)
 
@@ -88,8 +88,29 @@ export class MyanimelistService {
         request.continue()
       }
     })
+    await page.setDefaultNavigationTimeout(60 * 2000)
     await page.goto(url)
-    this.logger.debug(`Page ${data} loaded`)
+    const searchText =
+      'We are temporarily restricting site connections due to heavy access.\n        Please click "Submit" to verify that you are not a bot.\n        \n          Some error occured. please try again.'
+    try {
+      const foundText = await ClusterManager.pageFindOne(
+        page,
+        '.display-submit .caption',
+        'textContent',
+      )
+      if (foundText.trim() === searchText) {
+        this.logger.debug(`found captcha, will wait 5 secconds`)
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+        this.logger.debug(`clicking button`)
+        await page.$eval('button[type="submit"]', (el: any) => el.click())
+        this.logger.debug(`waiting 30 seconds`)
+        await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
+        this.logger.debug(`continue scrape`)
+      }
+    } catch (error) {
+      // this.logger.debug('not a captcha')
+      this.logger.debug('Scraping page...')
+    }
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
       '#content td .spaceit_pad',

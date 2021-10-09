@@ -4,17 +4,17 @@ import { Cluster } from 'puppeteer-cluster'
 class ClusterManager {
   private cluster: Cluster<any, any>
 
-  public async launch({ concurrency, puppeteer }) {
+  public async launch({ concurrency, puppeteer, headless }) {
     this.cluster = await Cluster.launch({
       concurrency: Cluster.CONCURRENCY_CONTEXT,
       maxConcurrency: concurrency,
       retryLimit: 3,
-      timeout: 60 * 1000,
+      timeout: 60 * 2000,
       monitor: false,
       puppeteer,
       puppeteerOptions: {
         // @ts-ignore
-        headless: true,
+        headless,
         args: [
           '--window-size=1400,900',
           '--remote-debugging-port=9222',
