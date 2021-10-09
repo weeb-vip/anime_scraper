@@ -20,8 +20,20 @@ import { ScraperService } from './scraper.service'
           level: 'error',
         }),
         new transports.Console({
+          level: 'warn',
+          format: format.combine(
+            alignColorsAndTime(ScraperModule.name, 'yellow'),
+          ),
+        }),
+        new transports.Console({
           level: 'info',
-          format: format.combine(format.colorize(), format.simple()),
+          format: format.combine(
+            alignColorsAndTime(ScraperModule.name, 'blue'),
+          ),
+        }),
+        new transports.Console({
+          level: 'error',
+          format: format.combine(alignColorsAndTime(ScraperModule.name, 'red')),
         }),
         new transports.Console({
           level: 'debug',

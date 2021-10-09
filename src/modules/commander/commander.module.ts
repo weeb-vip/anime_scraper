@@ -19,8 +19,22 @@ import { CollectCommand } from './collect.command'
           level: 'error',
         }),
         new transports.Console({
+          level: 'warn',
+          format: format.combine(
+            alignColorsAndTime(ScraperCommandModule.name, 'yellow'),
+          ),
+        }),
+        new transports.Console({
           level: 'info',
-          format: format.combine(format.colorize(), format.simple()),
+          format: format.combine(
+            alignColorsAndTime(ScraperCommandModule.name, 'blue'),
+          ),
+        }),
+        new transports.Console({
+          level: 'error',
+          format: format.combine(
+            alignColorsAndTime(ScraperCommandModule.name, 'red'),
+          ),
         }),
         new transports.Console({
           level: 'debug',

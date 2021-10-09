@@ -130,7 +130,7 @@ export class MyanimelistService {
       }
       return {
         ...(await acc),
-        [field.toLowerCase().replace(/:/g, '')]: (
+        [field ? field.toLowerCase().replace(/:/g, '') : 'undefined']: (
           await page.evaluate((el: any) => el.textContent, element)
         )
           .replace(field, '')
