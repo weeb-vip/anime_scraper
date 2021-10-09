@@ -31,7 +31,7 @@ export class MyanimelistService {
   async collectAnime({ page, data }: any) {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
-    await page.setRequestInterception(true)
+    // await page.setRequestInterception(true)
     /*page.on('request', (request: any): void => {
       if (request.resourceType() === 'script') request.abort()
       else {
@@ -81,13 +81,13 @@ export class MyanimelistService {
   async scrapeAnimePage({ page, data }: any) {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
-    await page.setRequestInterception(true)
+    /*await page.setRequestInterception(true)
     page.on('request', (request: any): void => {
       if (request.resourceType() === 'script') request.abort()
       else {
         request.continue()
       }
-    })
+    })*/
     await page.setDefaultNavigationTimeout(60 * 2000)
     await page.goto(url)
     const searchText =
