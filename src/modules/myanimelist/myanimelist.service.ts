@@ -142,6 +142,9 @@ export class MyanimelistService {
       'p[itemprop="description"]',
       'textContent',
     )
+    if (!res['english'] && !res['japanese']) {
+      throw new Error('No english or japanese title, should retry')
+    }
     const parsedData = {
       title_en: res['english'],
       title_jp: res['japanese'],

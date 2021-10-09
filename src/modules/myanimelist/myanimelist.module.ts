@@ -21,8 +21,22 @@ import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
           level: 'error',
         }),
         new transports.Console({
+          level: 'warn',
+          format: format.combine(
+            alignColorsAndTime(MyanimelistModule.name, 'yellow'),
+          ),
+        }),
+        new transports.Console({
           level: 'info',
-          format: format.combine(format.colorize(), format.simple()),
+          format: format.combine(
+            alignColorsAndTime(MyanimelistModule.name, 'blue'),
+          ),
+        }),
+        new transports.Console({
+          level: 'error',
+          format: format.combine(
+            alignColorsAndTime(MyanimelistModule.name, 'red'),
+          ),
         }),
         new transports.Console({
           level: 'debug',
