@@ -1,0 +1,33 @@
+version: '2.2'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: 'Dockerfile.local'
+    command: "/bin/bash -c 'yarn && yarn build && yarn typeorm migration:run && yarn start:dev'"
+    env_file: .env
+    volumes:
+      - '.:/usr/src/app'
+      - 'anime-scrapper_deps:/usr/src/app/node_modules'
+    ports:
+      - '1338:3000'
+    networks:
+      - anime-scrapper-network
+  postgres:
+    image: postgres:13
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_MULTIPLE_DATABASES=anime,test
+    volumes:
+      - 'anime-scrapper_db:/var/lib/postgresql/data/'
+      - '.db_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql'
+    networks:
+      - anime-scrapper-network
+
+networks:
+  anime-scrapper-network:
+volumes:
+  anime-scrapper_deps:
+  anime-scrapper_db:

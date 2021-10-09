@@ -1,0 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+SELECT 'CREATE DATABASE anime'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'anime')\gexec
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
