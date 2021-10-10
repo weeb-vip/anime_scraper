@@ -142,6 +142,13 @@ export class MyanimelistService {
       'p[itemprop="description"]',
       'textContent',
     )
+    //document.querySelector('.title-name.h1_bold_none').textContent
+    const titleHeader = await ClusterManager.pageFindOne(
+      page,
+      '.title-name.h1_bold_none',
+      'textContent',
+    )
+    res['english'] = res['english'] || titleHeader
     if (!res['english'] && !res['japanese']) {
       throw new Error('No english or japanese title, should retry')
     }

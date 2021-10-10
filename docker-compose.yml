@@ -14,7 +14,7 @@ services:
     networks:
       - anime-scrapper-network
   postgres:
-    image: postgres:13
+    image: citusdata/citus:10.2
     ports:
       - '5432:5432'
     environment:

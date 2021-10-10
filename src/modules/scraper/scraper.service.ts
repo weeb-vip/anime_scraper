@@ -57,8 +57,8 @@ export class ScraperService {
     // return this.anidbService.getAnime(anidbId);
     return 'ok'
   }
-  async collectMyanimelist(param: string[], limit) {
-    await this.puppeteerService.setup(limit)
+  async collectMyanimelist(param: string[], limit: number, headless: boolean) {
+    await this.puppeteerService.setup(limit, headless)
     await this.puppeteerService
       .getManager()
       .task(this.myanimelistService.collectAnime.bind(this.myanimelistService))
@@ -85,7 +85,12 @@ export class ScraperService {
     return 'ok'
   }
 
-  async scrapeMyAnimeList(param: string[], limit: number, headless: boolean) {
+  async scrapeMyAnimeList(
+    param: string[],
+    limit: number,
+    headless: boolean,
+    urls?: string[],
+  ) {
     await this.puppeteerService.setup(limit, headless)
     await this.puppeteerService
       .getManager()
@@ -104,9 +109,16 @@ export class ScraperService {
           this.logger.error(`Failed to crawl ${data}: ${err.message}`)
         }
       })
-    const urls = await this.myanimelistService.generateAnimeURLs()
+    let processUrls: string[] = null
+    if (urls) {
+      processUrls = urls
+    } else {
+      processUrls = await this.myanimelistService.generateAnimeURLs()
+    }
     await Promise.all(
-      urls.map((url: string) => this.puppeteerService.getManager().queue(url)),
+      processUrls.map((url: string) =>
+        this.puppeteerService.getManager().queue(url),
+      ),
     )
     await this.puppeteerService.getManager().idle()
     await this.puppeteerService.getManager().close()

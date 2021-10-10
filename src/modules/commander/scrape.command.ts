@@ -1,3 +1,5 @@
+import * as path from 'path'
+import * as fs from 'fs'
 import { Inject } from '@nestjs/common'
 import { Command, CommandRunner, Option } from 'nest-commander'
 import { Logger } from 'winston'
@@ -7,6 +9,7 @@ interface BasicCommandOptions {
   site: string
   limit?: number
   headless?: boolean
+  file?: string
 }
 
 @Command({ name: 'scrape', description: 'A parameter parse' })
@@ -21,12 +24,21 @@ export class ScraperCommand implements CommandRunner {
     passedParam: string[],
     options?: BasicCommandOptions,
   ): Promise<void> {
+    let urls: string[] = null
+    if (options?.file !== undefined && options?.file !== null) {
+      const contents = fs.readFileSync(
+        path.resolve(process.cwd(), options?.file),
+        'utf8',
+      )
+      urls = JSON.parse(contents)
+    }
     if (options?.site !== undefined && options?.site !== null) {
       this.scrapeSite(
         passedParam,
         options.site,
         options?.limit,
         !!options?.headless,
+        options?.file !== undefined && options?.file !== null ? urls : null,
       )
     }
   }
@@ -48,10 +60,19 @@ export class ScraperCommand implements CommandRunner {
   }
 
   @Option({
+    flags: '-f, --file [file]',
+    description: 'Urls from json file (array)',
+  })
+  getFile(val: string): string {
+    this.logger.info(`Pased val: ${val}`)
+    return val
+  }
+
+  @Option({
     flags: '-h, --headless',
     description: 'Run headless',
   })
-  getHeadless(val: string): boolean {
+  getHeadless(): boolean {
     return true
   }
 
@@ -60,6 +81,7 @@ export class ScraperCommand implements CommandRunner {
     option: string,
     limit: number,
     headless: boolean,
+    urls?: string[],
   ): void {
     this.logger.info(`scape site: ${option}`)
     switch (option) {
@@ -67,7 +89,7 @@ export class ScraperCommand implements CommandRunner {
         this.scapperService.scrapeAnidb(param)
         break
       case 'myanimelist':
-        this.scapperService.scrapeMyAnimeList(param, limit, headless)
+        this.scapperService.scrapeMyAnimeList(param, limit, headless, urls)
         break
 
       /*case 'mal':
