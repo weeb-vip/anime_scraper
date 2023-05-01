@@ -10,7 +10,7 @@ services:
       - '.:/usr/src/app'
       - 'anime-scrapper_deps:/usr/src/app/node_modules'
     ports:
-      - '1338:3000'
+      - '1339:3000'
     networks:
       - anime-scrapper-network
   postgres:

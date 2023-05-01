@@ -39,6 +39,31 @@ export class MyanimelistService {
       }
     })*/
     await page.goto(url)
+    const searchText =
+      'We are temporarily restricting site connections due to heavy access.\n' +
+      '        Please click "Submit" to verify that you are not a bot.\n' +
+      '        \n' +
+      '          Some error occured. please try again.'
+    try {
+      const foundText = await ClusterManager.pageFindOne(
+        page,
+        '.display-submit .caption',
+        'textContent',
+      )
+      this.logger.debug(`found text: ${foundText}`)
+      if (foundText.trim() === searchText) {
+        this.logger.debug(`found captcha, will wait 5 secconds`)
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+        this.logger.debug(`clicking button`)
+        await page.$eval('button[type="submit"]', (el: any) => el.click())
+        this.logger.debug(`waiting 30 seconds`)
+        await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
+        this.logger.debug(`continue scrape`)
+      }
+    } catch (error) {
+      this.logger.debug('not a captcha')
+      this.logger.debug('Scraping page...')
+    }
     this.logger.debug(`Page ${data} loaded`)
 
     const linkElements: ElementHandle[] = await ClusterManager.findMany(
@@ -91,7 +116,10 @@ export class MyanimelistService {
     await page.setDefaultNavigationTimeout(60 * 2000)
     await page.goto(url)
     const searchText =
-      'We are temporarily restricting site connections due to heavy access.\n        Please click "Submit" to verify that you are not a bot.\n        \n          Some error occured. please try again.'
+      'We are temporarily restricting site connections due to heavy access.\n' +
+      '        Please click "Submit" to verify that you are not a bot.\n' +
+      '        \n' +
+      '          Some error occured. please try again.'
     try {
       const foundText = await ClusterManager.pageFindOne(
         page,

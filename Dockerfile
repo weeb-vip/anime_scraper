@@ -1,4 +1,4 @@
-FROM node:14.18.0-alpine3.14 AS build
+FROM node:19.7.0-alpine3.16 AS build
 
 ENV NODE_ENV development
 WORKDIR /usr/src/app
@@ -13,7 +13,7 @@ RUN apk update && apk add bash
 RUN yarn install --production=false
 RUN yarn build
 
-FROM node:14.16.1-alpine3.10 AS PROD
+FROM node:19.7.0-alpine3.16 AS PROD
 ENV NODE_ENV production
 ARG SERVICE_VERSION
 ENV SERVICE_VERSION=$SERVICE_VERSION
