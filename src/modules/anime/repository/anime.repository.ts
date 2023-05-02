@@ -1,5 +1,6 @@
 import { EntityRepository, Repository } from 'typeorm'
 import * as _ from 'lodash'
+import { isDate } from 'date-fns'
 import { IAnime } from './interface'
 import { Anime } from './anime.entity'
 
@@ -23,8 +24,8 @@ export class AnimeRepository extends Repository<Anime> {
           synopsis: item.synopsis,
           episodes: item.episodes,
           status: item.status,
-          startDate: item.startDate,
-          endDate: item.endDate,
+          startDate: isDate(item.startDate) ? item.startDate : null,
+          endDate: isDate(item.endDate) ? item.endDate : null,
           genres: item.genres,
           duration: item.duration,
           broadcast: item.broadcast,
@@ -56,8 +57,8 @@ export class AnimeRepository extends Repository<Anime> {
           synopsis: item.synopsis,
           episodes: item.episodes,
           status: item.status,
-          startDate: item.startDate,
-          endDate: item.endDate,
+          startDate: isDate(item.startDate) ? item.startDate : null,
+          endDate: isDate(item.endDate) ? item.endDate : null,
           genres: item.genres,
           duration: item.duration,
           broadcast: item.broadcast,
@@ -87,8 +88,8 @@ export class AnimeRepository extends Repository<Anime> {
           synopsis: item.synopsis,
           episodes: item.episodes,
           status: item.status,
-          startDate: item.startDate,
-          endDate: item.endDate,
+          startDate: isDate(item.startDate) ? item.startDate : null,
+          endDate: isDate(item.endDate) ? item.endDate : null,
           genres: item.genres,
           duration: item.duration,
           broadcast: item.broadcast,
@@ -132,8 +133,8 @@ export class AnimeRepository extends Repository<Anime> {
         synopsis: link.synopsis,
         episodes: link.episodes,
         status: link.status,
-        startDate: link.startDate,
-        endDate: link.endDate,
+        startDate: isDate(link.startDate) ? link.startDate : null,
+        endDate: isDate(link.endDate) ? link.endDate : null,
         genres: link.genres,
         duration: link.duration,
         broadcast: link.broadcast,
@@ -165,8 +166,8 @@ export class AnimeRepository extends Repository<Anime> {
       synopsis: saved.synopsis,
       episodes: saved.episodes,
       status: saved.status,
-      startDate: saved.startDate,
-      endDate: saved.endDate,
+      startDate: isDate(saved.startDate) ? saved.startDate : null,
+      endDate: isDate(saved.endDate) ? saved.endDate : null,
       genres: saved.genres,
       duration: saved.duration,
       broadcast: saved.broadcast,
