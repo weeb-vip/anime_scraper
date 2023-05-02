@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import * as QueryString from 'query-string'
 import { ElementHandle } from 'puppeteer'
-import { parse as ParseDate } from 'date-fns'
+import { parse as ParseDate, isDate } from 'date-fns'
 import { Logger } from 'winston'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
@@ -19,6 +19,7 @@ export class MyanimelistService {
       limit: 0,
     },
   }
+
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
@@ -193,7 +194,15 @@ export class MyanimelistService {
       episodes: res['episodes'] ? parseInt(res['episodes'], 10) : null,
       status: res['status'],
       startDate:
-        res['aired'] && res['aired'].split('to')[0]
+        res['aired'] &&
+        res['aired'].split('to')[0] &&
+        isDate(
+          ParseDate(
+            res['aired'].split('to')[0].trim(),
+            'LLL d, yyyy',
+            new Date(),
+          ),
+        )
           ? ParseDate(
               res['aired'].split('to')[0].trim(),
               'LLL d, yyyy',
@@ -201,7 +210,15 @@ export class MyanimelistService {
             )
           : null,
       endDate:
-        res['aired'] && res['aired'].split('to')[1]
+        res['aired'] &&
+        res['aired'].split('to')[1] &&
+        isDate(
+          ParseDate(
+            res['aired'].split('to')[1].trim(),
+            'LLL d, yyyy',
+            new Date(),
+          ),
+        )
           ? ParseDate(
               res['aired'].split('to')[1].trim(),
               'LLL d, yyyy',
