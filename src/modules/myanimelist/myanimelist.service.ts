@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import * as QueryString from 'query-string'
 import { ElementHandle } from 'puppeteer'
-import { parse as ParseDate, isDate } from 'date-fns'
+import { parse as ParseDate, isValid } from 'date-fns'
 import { Logger } from 'winston'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
@@ -196,7 +196,7 @@ export class MyanimelistService {
       startDate:
         res['aired'] &&
         res['aired'].split('to')[0] &&
-        isDate(
+        isValid(
           ParseDate(
             res['aired'].split('to')[0].trim(),
             'LLL d, yyyy',
@@ -212,7 +212,7 @@ export class MyanimelistService {
       endDate:
         res['aired'] &&
         res['aired'].split('to')[1] &&
-        isDate(
+        isValid(
           ParseDate(
             res['aired'].split('to')[1].trim(),
             'LLL d, yyyy',
