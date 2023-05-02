@@ -46,10 +46,10 @@ export class Anime {
   status: string
 
   @Column({ name: 'start_date', nullable: true, type: 'timestamptz' })
-  startDate: Date
+  startDate: Date | null
 
   @Column({ name: 'end_date', nullable: true, type: 'timestamptz' })
-  endDate: Date
+  endDate: Date | null
 
   @Column('text', { name: 'genres', array: true, nullable: true })
   genres: string[]
