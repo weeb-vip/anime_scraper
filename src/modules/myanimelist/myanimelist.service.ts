@@ -180,6 +180,11 @@ export class MyanimelistService {
     if (!res['english'] && !res['japanese']) {
       throw new Error('No english or japanese title, should retry')
     }
+    const rating = await ClusterManager.pageFindOne(
+      page,
+      '.score .score-label',
+      'textContent',
+    )
     const parsedData = {
       title_en: res['english'],
       title_jp: res['japanese'],
@@ -210,10 +215,9 @@ export class MyanimelistService {
       studios: res['studios'] ? res['studios'].split(',') : null,
       source: res['source'],
       synopsis: res['synopsis'],
+      rating: rating ? rating : null,
     }
 
     this.animeService.upsertAnime(parsedData)
-
-    // await ClusterManager.pageFindOne(page,
   }
 }

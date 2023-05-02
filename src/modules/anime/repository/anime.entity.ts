@@ -55,7 +55,7 @@ export class Anime {
   genres: string[]
 
   @Column({ name: 'duration', nullable: true })
-  duration: number
+  duration: string
 
   @Column({ name: 'broadcast', nullable: true })
   broadcast: string
@@ -68,6 +68,9 @@ export class Anime {
 
   @Column('text', { name: 'studios', array: true, nullable: true })
   studios: string[]
+
+  @Column({ name: 'rating', nullable: true })
+  rating: string
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

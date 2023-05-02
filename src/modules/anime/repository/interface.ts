@@ -13,11 +13,12 @@ export interface IAnime {
   startDate: Date
   endDate: Date
   genres: string[]
-  duration: number
+  duration: string
   broadcast: string
   source: string
   licensors: string[]
   studios: string[]
+  rating: string
   createdAt: Date
   updatedAt: Date
 }
