@@ -30,7 +30,19 @@ export class Anime {
   @Column({ name: 'title_kanji', nullable: true })
   title_kanji: string
 
-  @Column('text', { name: 'title_synonyms', array: true, nullable: true })
+  @Column('text', {
+    name: 'title_synonyms',
+    array: false,
+    nullable: true,
+    transformer: {
+      to(value: string[]): string {
+        return JSON.stringify(value)
+      },
+      from(value: string): string[] {
+        return JSON.parse(value)
+      },
+    },
+  })
   title_synonyms: string[]
 
   @Column({ name: 'image_url', nullable: true })
@@ -51,7 +63,19 @@ export class Anime {
   @Column({ name: 'end_date', nullable: true, type: 'timestamptz' })
   endDate: Date | null
 
-  @Column('text', { name: 'genres', array: true, nullable: true })
+  @Column('text', {
+    name: 'genres',
+    array: false,
+    nullable: true,
+    transformer: {
+      to(value: string[]): string {
+        return JSON.stringify(value)
+      },
+      from(value: string): string[] {
+        return JSON.parse(value)
+      },
+    },
+  })
   genres: string[]
 
   @Column({ name: 'duration', nullable: true })
@@ -63,10 +87,34 @@ export class Anime {
   @Column({ name: 'source', nullable: true })
   source: string
 
-  @Column('text', { name: 'licensors', array: true, nullable: true })
+  @Column('text', {
+    name: 'licensors',
+    array: false,
+    nullable: true,
+    transformer: {
+      to(value: string[]): string {
+        return JSON.stringify(value)
+      },
+      from(value: string): string[] {
+        return JSON.parse(value)
+      },
+    },
+  })
   licensors: string[]
 
-  @Column('text', { name: 'studios', array: true, nullable: true })
+  @Column('text', {
+    name: 'studios',
+    array: false,
+    nullable: true,
+    transformer: {
+      to(value: string[]): string {
+        return JSON.stringify(value)
+      },
+      from(value: string): string[] {
+        return JSON.parse(value)
+      },
+    },
+  })
   studios: string[]
 
   @Column({ name: 'rating', nullable: true })
