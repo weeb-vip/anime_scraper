@@ -1,5 +1,7 @@
 export interface IAnime {
   id: string
+
+  anidbid: string
   type: RECORD_TYPE
   title_en: string
   title_jp: string

@@ -14,6 +14,7 @@ export class AnimeRepository extends Repository<Anime> {
     return item
       ? {
           id: item.id,
+          anidbid: item.anidbid,
           type: item.type,
           title_en: item.title_en,
           title_jp: item.title_jp,
@@ -47,6 +48,7 @@ export class AnimeRepository extends Repository<Anime> {
     return item
       ? {
           id: item.id,
+          anidbid: item.anidbid,
           type: item.type,
           title_en: item.title_en,
           title_jp: item.title_jp,
@@ -78,6 +80,7 @@ export class AnimeRepository extends Repository<Anime> {
     return item
       ? {
           id: item.id,
+          anidbid: item.anidbid,
           type: item.type,
           title_en: item.title_en,
           title_jp: item.title_jp,
@@ -123,6 +126,7 @@ export class AnimeRepository extends Repository<Anime> {
       const link = { ...savedLink, ...cleanBody }
       return {
         id: link.id,
+        anidbid: link.anidbid,
         type: link.type,
         title_en: link.title_en,
         title_jp: link.title_jp,
@@ -156,6 +160,7 @@ export class AnimeRepository extends Repository<Anime> {
     savedLink = null
     return {
       id: saved.id,
+      anidbid: saved.anidbid,
       type: saved.type,
       title_en: saved.title_en,
       title_jp: saved.title_jp,

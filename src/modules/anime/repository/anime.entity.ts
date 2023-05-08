@@ -15,6 +15,9 @@ export class Anime {
   @Generated('uuid')
   id: string
 
+  @Column({ name: 'anidbid', nullable: true })
+  anidbid: string
+
   @Column({ name: 'type', enum: RECORD_TYPE, default: RECORD_TYPE.Anime })
   type: RECORD_TYPE
 

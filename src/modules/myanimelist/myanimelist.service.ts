@@ -186,7 +186,33 @@ export class MyanimelistService {
       '.score .score-label',
       'textContent',
     )
+    const links = await ClusterManager.findMany(page, '.external_links a')
+
+    const linkHrefs = Promise.all(
+      links.map((link: ElementHandle) => {
+        return page.evaluate((el: any) => el.href, link)
+      }),
+    )
+
+    const anidbLink =
+      (await linkHrefs).find((link: string) => {
+        return link.includes('https://anidb.net/')
+      }) || '?aid='
+
+    // get query params from anidb link
+    const anidbquery = anidbLink
+      .split('?')[1]
+      .split('&')
+      .reduce((acc, item) => {
+        return {
+          [item.split('=')[0]]: item.split('=')[1],
+        }
+      }, {})
+
+    const anidbId = anidbquery['aid']
+
     const parsedData = {
+      anidbid: anidbId,
       title_en: res['english'],
       title_jp: res['japanese'],
       title_synonyms: res['synonyms'] ? res['synonyms'].split(',') : null,
