@@ -21,6 +21,7 @@ export interface IAnime {
   licensors: string[]
   studios: string[]
   rating: string
+  ranking: number
   createdAt: Date
   updatedAt: Date
 }

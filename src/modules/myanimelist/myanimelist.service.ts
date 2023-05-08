@@ -211,7 +211,16 @@ export class MyanimelistService {
 
     const anidbId = anidbquery['aid']
 
+    const rankContent = await ClusterManager.pageFindOne(
+      page,
+      '.numbers.ranked strong',
+      'textContent',
+    )
+    this.logger.debug(`rankContent: ${rankContent}`)
+    const rank = rankContent ? parseInt(rankContent.replace('#', ''), 10) : null
+
     const parsedData = {
+      ranking: rank,
       anidbid: anidbId,
       title_en: res['english'],
       title_jp: res['japanese'],

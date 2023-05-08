@@ -34,6 +34,7 @@ export class AnimeRepository extends Repository<Anime> {
           licensors: item.licensors,
           studios: item.studios,
           rating: item.rating,
+          ranking: item.ranking,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -68,6 +69,7 @@ export class AnimeRepository extends Repository<Anime> {
           licensors: item.licensors,
           studios: item.studios,
           rating: item.rating,
+          ranking: item.ranking,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -100,6 +102,7 @@ export class AnimeRepository extends Repository<Anime> {
           licensors: item.licensors,
           studios: item.studios,
           rating: item.rating,
+          ranking: item.ranking,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -146,6 +149,7 @@ export class AnimeRepository extends Repository<Anime> {
         licensors: link.licensors,
         studios: link.studios,
         rating: link.rating,
+        ranking: link.ranking,
         createdAt: link.createdAt,
         updatedAt: link.updatedAt,
       }
@@ -180,6 +184,7 @@ export class AnimeRepository extends Repository<Anime> {
       licensors: saved.licensors,
       studios: saved.studios,
       rating: saved.rating,
+      ranking: saved.ranking,
       createdAt: saved.createdAt,
       updatedAt: saved.updatedAt,
     }

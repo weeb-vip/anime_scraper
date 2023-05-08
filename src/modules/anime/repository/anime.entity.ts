@@ -123,6 +123,9 @@ export class Anime {
   @Column({ name: 'rating', nullable: true })
   rating: string
 
+  @Column({ name: 'ranking', nullable: true })
+  ranking: number
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 
