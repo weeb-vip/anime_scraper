@@ -3,6 +3,7 @@ import { Logger } from 'winston'
 import { AnidbService } from '../anidb/anidb.service'
 import { MyanimelistService } from '../myanimelist/myanimelist.service'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
+import { ScrapeRecordService } from '../scrape_record/scrape_record.service'
 
 @Injectable()
 export class ScraperService {
@@ -23,6 +24,7 @@ export class ScraperService {
       keywords: ['keyword1', 'keyword2'],
     }
   }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   scrapeAnidb(param: string[]) {
     // return this.anidbService.getAnime(anidbId);
@@ -57,6 +59,7 @@ export class ScraperService {
     // return this.anidbService.getAnime(anidbId);
     return 'ok'
   }
+
   async collectMyanimelist(param: string[], limit: number, headless: boolean) {
     await this.puppeteerService.setup(limit, headless)
     await this.puppeteerService
@@ -90,8 +93,10 @@ export class ScraperService {
     limit: number,
     headless: boolean,
     urls?: string[],
+    excludedUrls?: string[],
   ) {
     await this.puppeteerService.setup(limit, headless)
+
     await this.puppeteerService
       .getManager()
       .task(
@@ -115,6 +120,11 @@ export class ScraperService {
     } else {
       processUrls = await this.myanimelistService.generateAnimeURLs()
     }
+    if (excludedUrls) {
+      processUrls = processUrls.filter(
+        (url: string) => !excludedUrls.includes(url),
+      )
+    }
     await Promise.all(
       processUrls.map((url: string) =>
         this.puppeteerService.getManager().queue(url),
@@ -122,8 +132,7 @@ export class ScraperService {
     )
     await this.puppeteerService.getManager().idle()
     await this.puppeteerService.getManager().close()
-    // this.anidbService.collectAnime(this.puppeteerService);
-    // return this.anidbService.getAnime(anidbId);
+
     return 'ok'
   }
 }

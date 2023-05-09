@@ -5,6 +5,7 @@ import { transports, format } from 'winston'
 import { AnimeModule } from '../anime/anime.module'
 import { alignColorsAndTime } from '../common/loggerformat'
 import { PuppeteerModule } from '../puppeteer/puppeteer.module'
+import { ScrapeRecordModule } from '../scrape_record/scrapre_record.module'
 import { MyanimelistService } from './myanimelist.service'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 
@@ -46,6 +47,7 @@ import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
         }),
       ],
     }),
+    ScrapeRecordModule,
   ],
   providers: [MyanimelistService],
   exports: [MyanimelistService],

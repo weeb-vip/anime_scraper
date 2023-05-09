@@ -6,6 +6,7 @@ import { Logger } from 'winston'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
 import { AnimeService } from '../anime/anime.service'
+import { ScrapeRecordService } from '../scrape_record/scrape_record.service'
 import { IAnimeRequest } from './interfaces'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 import { RECORD_TYPE } from './repository/interface'
@@ -26,6 +27,7 @@ export class MyanimelistService {
     private readonly puppeteerService: PuppeteerService,
     private readonly myanimelistlinkRepo: MyanimelistlinkRepository,
     private readonly animeService: AnimeService,
+    private readonly scrapeRecordService: ScrapeRecordService,
   ) {}
 
   // async ({ page, data }: any) => getFightersOnPage({ page, data }, addToDb)
@@ -271,5 +273,6 @@ export class MyanimelistService {
     }
 
     this.animeService.upsertAnime(parsedData)
+    this.scrapeRecordService.recordSuccessfulScrape(data)
   }
 }
