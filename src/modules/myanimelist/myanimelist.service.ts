@@ -173,6 +173,9 @@ export class MyanimelistService {
       'p[itemprop="description"]',
       'textContent',
     )
+    if (await ClusterManager.pageFindOne(page, '.viewOpEdMore', 'textContent')) {
+      await page.$eval('.viewOpEdMore', (el: any) => el.click())
+    }
     //document.querySelector('.title-name.h1_bold_none').textContent
     const titleHeader = await ClusterManager.pageFindOne(
       page,
