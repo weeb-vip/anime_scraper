@@ -1,12 +1,16 @@
 import * as fs from 'fs'
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
+import { Logger } from 'winston'
 
 @Injectable()
 export class ScrapeRecordService {
-  constructor() {}
+  constructor(
+    @Inject('winston')
+    private readonly logger: Logger,
+  ) {}
 
   recordSuccessfulScrape(url: string) {
-    console.log('Recording successful scrape: ' + url)
+    this.logger.info('Recording successful scrape: ' + url)
     // check if file exists, if not create it
     // check if url is already in file, if so return
     if (!fs.existsSync('scrape_record.txt')) {
