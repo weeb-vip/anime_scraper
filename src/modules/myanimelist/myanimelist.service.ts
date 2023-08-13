@@ -369,20 +369,26 @@ export class MyanimelistService {
       }
     })
 
-    // for each episode, get the synopsis
-    const episodeData = await Promise.all(
-      Object.keys(res).map(async (key: string) => {
-        const episode = res[key]
-        const episodeUrl = `${url}/episode/${episode.episodeNumber}`
-        await page.goto(episodeUrl)
+    // for each episode, get the synopsis in sequence
+    const episodeData = []
+    for (const key in res) {
+      if (res.hasOwnProperty(key)) {
+        const element = res[key]
+        const episodeLink = await ClusterManager.findOneGivenElement(
+          page,
+          element,
+          '.episode-title',
+          'href',
+        )
+        await page.goto(episodeLink)
         await this.handleCaptchas(page)
         const synopsis = await this.getEpisodeData(page)
-        return {
-          ...episode,
-          ...synopsis,
-        }
-      }),
-    )
+        episodeData.push({
+          ...element,
+          synopsis: synopsis,
+        })
+      }
+    }
 
     // for each episode save to database
     await Promise.all(
