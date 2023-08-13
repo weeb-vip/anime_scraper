@@ -333,6 +333,38 @@ export class MyanimelistService {
     // await episodesLink.click()
     // await page.waitForNavigation()
 
+    // check if .pagination exists
+    const paginationExists = await ClusterManager.wait(page, '.pagination', 100)
+    let episodes = []
+    if (paginationExists) {
+      // get pagination links
+      const paginationLinks: ElementHandle[] = await ClusterManager.findMany(
+        page,
+        '.pagination a',
+      )
+      // get link after active link based on class 'current'
+      const nextLink = await paginationLinks.find(
+        async (link: ElementHandle) => {
+          return await page
+            .evaluate((el: any) => el.classList, link)
+            .includes('current')
+        },
+      )
+      const index = paginationLinks.indexOf(nextLink)
+      if (!(index === paginationLinks.length - 1)) {
+        const nextLinkUrl = await page.evaluate(
+          (el: any) => el.href,
+          paginationLinks[index + 1],
+        )
+        episodes = episodes.concat(
+          await this.scrapeEpisode({
+            page,
+            data: { ...data, url: nextLinkUrl },
+          }),
+        )
+      }
+    }
+
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
       '.episode-list-data',
@@ -370,10 +402,8 @@ export class MyanimelistService {
       }
     })
 
-    console.log(res)
-
     // for each episode, get the synopsis in sequence
-    const episodeData = []
+    const episodeData = episodes
     for (const key in res) {
       if (res[key] && res[key].episodeNumber) {
         const element = res[key]
@@ -401,7 +431,10 @@ export class MyanimelistService {
         episodeEntity.synopsis = parsedData.synopsis
         episodeEntity.anime_id = parsedData.animeId
 
-        return this.animeService.upsertAnimeEpisode(data, episodeEntity)
+        return this.animeService.upsertAnimeEpisode(
+          id.toString(),
+          episodeEntity,
+        )
       }),
     )
   }
