@@ -345,9 +345,9 @@ export class MyanimelistService {
       // get link after active link based on class 'current'
       const nextLink = await paginationLinks.find(
         async (link: ElementHandle) => {
-          return (
-            await page.evaluate((el: any) => el.classList, link)
-          ).includes('current')
+          return await page
+            .evaluate((el: any) => el.className, link)
+            .includes('current')
         },
       )
       const index = paginationLinks.indexOf(nextLink)
