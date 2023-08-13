@@ -378,7 +378,6 @@ export class MyanimelistService {
         const element = res[key]
 
         await page.goto(`${url}/episode/${element.episodeNumber}`)
-        await page.waitForNavigation()
         await this.handleCaptchas(page)
         const synopsis = await this.getEpisodeData(page)
         episodeData.push({
