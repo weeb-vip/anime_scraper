@@ -303,6 +303,7 @@ export class MyanimelistService {
   public async scrapeEpisode({ page, data }: any): Promise<void> {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data.url
+    console.log('id', data.id)
     /*await page.setRequestInterception(true)
     page.on('request', (request: any): void => {
       if (request.resourceType() === 'script') request.abort()
