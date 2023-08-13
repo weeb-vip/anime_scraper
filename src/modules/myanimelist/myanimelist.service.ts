@@ -283,13 +283,17 @@ export class MyanimelistService {
     }
 
     const upsertedAnime = await this.animeService.upsertAnime(parsedData)
-    await this.scrapeEpisode({
-      page,
-      data: {
-        url,
-        id: upsertedAnime.id,
-      },
-    })
+    try {
+      await this.scrapeEpisode({
+        page,
+        data: {
+          url,
+          id: upsertedAnime.id,
+        },
+      })
+    } catch (e) {
+      this.logger.error(`Error scraping episodes for ${upsertedAnime.title_en}`)
+    }
     this.scrapeRecordService.recordSuccessfulScrape(data)
   }
 
@@ -316,6 +320,10 @@ export class MyanimelistService {
         .evaluate((el: any) => el.textContent, link)
         .includes('Episodes')
     })
+
+    if (!episodesLink) {
+      throw new Error('No episodes link found')
+    }
 
     // click episodes link
     await episodesLink.click()
