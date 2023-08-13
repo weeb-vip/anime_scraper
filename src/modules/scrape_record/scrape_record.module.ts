@@ -1,8 +1,8 @@
-import {Module} from '@nestjs/common'
-import {ScrapeRecordService} from './scrape_record.service'
-import {alignColorsAndTime} from "../common/loggerformat";
-import {WinstonModule} from 'nest-winston'
-import {transports, format} from 'winston'
+import { Module } from '@nestjs/common'
+import { WinstonModule } from 'nest-winston'
+import { transports, format } from 'winston'
+import { alignColorsAndTime } from '../common/loggerformat'
+import { ScrapeRecordService } from './scrape_record.service'
 
 @Module({
   imports: [
@@ -37,5 +37,4 @@ import {transports, format} from 'winston'
   providers: [ScrapeRecordService],
   exports: [ScrapeRecordService],
 })
-export class ScrapeRecordModule {
-}
+export class ScrapeRecordModule {}

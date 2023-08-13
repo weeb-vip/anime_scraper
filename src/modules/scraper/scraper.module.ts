@@ -5,7 +5,6 @@ import { AnidbModule } from '../anidb/anidb.module'
 import { alignColorsAndTime } from '../common/loggerformat'
 import { MyanimelistModule } from '../myanimelist/myanimelist.module'
 import { PuppeteerModule } from '../puppeteer/puppeteer.module'
-import { ScrapeRecordModule } from '../scrape_record/scrapre_record.module'
 import { ScraperService } from './scraper.service'
 
 @Module({

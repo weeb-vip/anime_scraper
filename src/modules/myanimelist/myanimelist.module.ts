@@ -1,13 +1,13 @@
-import {Module} from '@nestjs/common'
-import {TypeOrmModule} from '@nestjs/typeorm'
-import {WinstonModule} from 'nest-winston'
-import {transports, format} from 'winston'
-import {AnimeModule} from '../anime/anime.module'
-import {alignColorsAndTime} from '../common/loggerformat'
-import {PuppeteerModule} from '../puppeteer/puppeteer.module'
-import {ScrapeRecordModule} from '../scrape_record/scrapre_record.module'
-import {MyanimelistService} from './myanimelist.service'
-import {MyanimelistlinkRepository} from './repository/myanimelist.repository'
+import { Module } from '@nestjs/common'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { WinstonModule } from 'nest-winston'
+import { transports, format } from 'winston'
+import { AnimeModule } from '../anime/anime.module'
+import { alignColorsAndTime } from '../common/loggerformat'
+import { PuppeteerModule } from '../puppeteer/puppeteer.module'
+import { ScrapeRecordModule } from '../scrape_record/scrape_record.module'
+import { MyanimelistService } from './myanimelist.service'
+import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 
 @Module({
   imports: [
@@ -46,5 +46,4 @@ import {MyanimelistlinkRepository} from './repository/myanimelist.repository'
   providers: [MyanimelistService],
   exports: [MyanimelistService],
 })
-export class MyanimelistModule {
-}
+export class MyanimelistModule {}

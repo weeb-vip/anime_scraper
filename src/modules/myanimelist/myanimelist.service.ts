@@ -7,6 +7,7 @@ import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
 import { AnimeService } from '../anime/anime.service'
 import { ScrapeRecordService } from '../scrape_record/scrape_record.service'
+import { AnimeEpisodesEntity } from '../anime/repository/animeEpisodes.entity'
 import { IAnimeRequest } from './interfaces'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 import { RECORD_TYPE } from './repository/interface'
@@ -106,18 +107,7 @@ export class MyanimelistService {
     )
   }
 
-  async scrapeAnimePage({ page, data }: any) {
-    this.logger.debug(`Collecting anime on page ${data}`)
-    const url: string = data
-    /*await page.setRequestInterception(true)
-    page.on('request', (request: any): void => {
-      if (request.resourceType() === 'script') request.abort()
-      else {
-        request.continue()
-      }
-    })*/
-    await page.setDefaultNavigationTimeout(60 * 2000)
-    await page.goto(url)
+  private async handleCaptchas(page: any) {
     const searchText =
       'We are temporarily restricting site connections due to heavy access.\n' +
       '        Please click "Submit" to verify that you are not a bot.\n' +
@@ -142,6 +132,21 @@ export class MyanimelistService {
       // this.logger.debug('not a captcha')
       this.logger.debug('Scraping page...')
     }
+  }
+
+  async scrapeAnimePage({ page, data }: any) {
+    this.logger.debug(`Collecting anime on page ${data}`)
+    const url: string = data
+    /*await page.setRequestInterception(true)
+    page.on('request', (request: any): void => {
+      if (request.resourceType() === 'script') request.abort()
+      else {
+        request.continue()
+      }
+    })*/
+    await page.setDefaultNavigationTimeout(60 * 2000)
+    await page.goto(url)
+    await this.handleCaptchas(page)
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
       '#content td .spaceit_pad',
@@ -173,7 +178,9 @@ export class MyanimelistService {
       'p[itemprop="description"]',
       'textContent',
     )
-    if (await ClusterManager.pageFindOne(page, '.viewOpEdMore', 'textContent')) {
+    if (
+      await ClusterManager.pageFindOne(page, '.viewOpEdMore', 'textContent')
+    ) {
       await page.$eval('.viewOpEdMore', (el: any) => el.click())
     }
     //document.querySelector('.title-name.h1_bold_none').textContent
@@ -275,7 +282,126 @@ export class MyanimelistService {
       rating: rating ? rating : null,
     }
 
-    this.animeService.upsertAnime(parsedData)
+    const upsertedAnime = await this.animeService.upsertAnime(parsedData)
+    await this.scrapeEpisode({
+      page,
+      data: {
+        url,
+        id: upsertedAnime.id,
+      },
+    })
     this.scrapeRecordService.recordSuccessfulScrape(data)
+  }
+
+  public async scrapeEpisode({ page, data }: any): Promise<void> {
+    this.logger.debug(`Collecting anime on page ${data}`)
+    const url: string = data
+    /*await page.setRequestInterception(true)
+    page.on('request', (request: any): void => {
+      if (request.resourceType() === 'script') request.abort()
+      else {
+        request.continue()
+      }
+    })*/
+    await page.setDefaultNavigationTimeout(60 * 2000)
+    await page.goto(`${url}/episode`)
+    await this.handleCaptchas(page)
+
+    const elements: ElementHandle[] = await ClusterManager.findMany(
+      page,
+      '.episode-list-data',
+    )
+
+    // @ts-ignore
+    const res: any = await elements.reduce(async (acc, element) => {
+      const title = await ClusterManager.findOneGivenElement(
+        page,
+        element,
+        '.episode-title',
+        'textContent',
+      )
+      const episodeNumber = await ClusterManager.findOneGivenElement(
+        page,
+        element,
+
+        '.episode-number',
+        'textContent',
+      )
+      const aired = await ClusterManager.findOneGivenElement(
+        page,
+        element,
+        '.episode-aired',
+        'textContent',
+      )
+
+      return {
+        ...(await acc),
+        [title ? title.toLowerCase().replace(/:/g, '') : 'undefined']: {
+          title: title,
+          episodeNumber: episodeNumber,
+          aired: aired,
+        },
+      }
+    })
+
+    // for each episode, get the synopsis
+    const episodeData = await Promise.all(
+      Object.keys(res).map(async (key: string) => {
+        const episode = res[key]
+        const episodeUrl = `${url}/episode/${episode.episodeNumber}`
+        await page.goto(episodeUrl)
+        await this.handleCaptchas(page)
+        const synopsis = await this.getEpisodeData(page)
+        return {
+          ...episode,
+          ...synopsis,
+        }
+      }),
+    )
+
+    // for each episode save to database
+    await Promise.all(
+      episodeData.map(async (episode: any) => {
+        const parsedData = {
+          title: episode.title,
+          episodeNumber: episode.episodeNumber,
+          aired: episode.aired,
+          synopsis: episode.synopsis,
+          animeId: data,
+        }
+        const episodeEntity = new AnimeEpisodesEntity()
+        episodeEntity.title = parsedData.title
+        episodeEntity.episode = parsedData.episodeNumber
+        episodeEntity.aired = parsedData.aired
+        episodeEntity.synopsis = parsedData.synopsis
+        episodeEntity.animeID = parsedData.animeId
+
+        return this.animeService.upsertAnimeEpisode(data, episodeEntity)
+      }),
+    )
+  }
+
+  public async getEpisodeData(page) {
+    // click on episode title
+    page.$eval('.episode-title', (el: any) => el.click())
+    // wait for page to load
+    await page.waitForNavigation()
+    await this.handleCaptchas(page)
+    // get synopsis
+    const elements = await ClusterManager.findMany(page, 'h2')
+
+    const synopsis = elements.find((el: any) => {
+      return el.textContent.includes('Synopsis')
+    })
+
+    // get parent of synopsis and text content
+    const synopsisText = await page.evaluate(
+      (el: any) => el.parentElement.textContent,
+      synopsis,
+    )
+
+    return {
+      synopsis: synopsisText,
+    }
   }
 }
