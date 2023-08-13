@@ -374,13 +374,8 @@ export class MyanimelistService {
     for (const key in res) {
       if (res.hasOwnProperty(key)) {
         const element = res[key]
-        const episodeLink = await ClusterManager.findOneGivenElement(
-          page,
-          element,
-          '.episode-title a',
-          'href',
-        )
-        await page.goto(episodeLink)
+
+        await page.goto(`${url}/episode/${element.episodeNumber}`)
         await this.handleCaptchas(page)
         const synopsis = await this.getEpisodeData(page)
         episodeData.push({
