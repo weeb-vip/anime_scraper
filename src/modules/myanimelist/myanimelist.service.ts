@@ -418,7 +418,7 @@ export class MyanimelistService {
     // get synopsis
     const elements = await ClusterManager.findMany(page, 'h2')
 
-    const synopsis = await elements.find(async (el: any) => {
+    const synopsis = await elements.find(async (element: any) => {
       return await page.evaluate((el: any) => el.textContent, element)
     })
 
