@@ -336,6 +336,7 @@ export class MyanimelistService {
       page,
       '.episode-list-data',
     )
+    console.log('elements: ', elements)
 
     // @ts-ignore
     const res: any = await elements.reduce(async (acc, element) => {
