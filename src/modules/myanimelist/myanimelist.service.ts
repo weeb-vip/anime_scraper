@@ -377,12 +377,8 @@ export class MyanimelistService {
       if (res[key] && res[key].episodeNumber) {
         const element = res[key]
 
-        await page.goto(`${url}/episode/${element.episodeNumber}`)
-        await this.handleCaptchas(page)
-        const synopsis = await this.getEpisodeData(page)
         episodeData.push({
           ...element,
-          synopsis: synopsis,
         })
       }
     }
@@ -407,29 +403,5 @@ export class MyanimelistService {
         return this.animeService.upsertAnimeEpisode(data, episodeEntity)
       }),
     )
-  }
-
-  public async getEpisodeData(page) {
-    // click on episode title
-    // page.$eval('.episode-title', (el: any) => el.click())
-    // // wait for page to load
-    // await page.waitForNavigation()
-    // await this.handleCaptchas(page)
-    // get synopsis
-    const elements = await ClusterManager.findMany(page, 'h2')
-
-    const synopsis = await elements.find(async (element: any) => {
-      return await page.evaluate((el: any) => el.textContent, element)
-    })
-
-    // get parent of synopsis and text content
-    const synopsisText = await page.evaluate(
-      (el: any) => el.parentElement.textContent,
-      synopsis,
-    )
-
-    return {
-      synopsis: synopsisText,
-    }
   }
 }
