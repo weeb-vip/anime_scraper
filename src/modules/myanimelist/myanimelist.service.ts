@@ -377,7 +377,7 @@ export class MyanimelistService {
         const episodeLink = await ClusterManager.findOneGivenElement(
           page,
           element,
-          '.episode-title',
+          '.episode-title a',
           'href',
         )
         await page.goto(episodeLink)
