@@ -304,8 +304,22 @@ export class MyanimelistService {
       }
     })*/
     await page.setDefaultNavigationTimeout(60 * 2000)
-    await page.goto(`${url}/episodes`)
+    await page.goto(`${url}`)
     await this.handleCaptchas(page)
+
+    // get all links
+    const links: ElementHandle[] = await ClusterManager.findMany(page, 'a')
+
+    // select link with textContent 'Episodes'
+    const episodesLink = links.find((link: ElementHandle) => {
+      return page
+        .evaluate((el: any) => el.textContent, link)
+        .includes('Episodes')
+    })
+
+    // click episodes link
+    await episodesLink.click()
+    await page.waitForNavigation()
 
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
