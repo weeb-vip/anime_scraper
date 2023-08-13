@@ -304,7 +304,7 @@ export class MyanimelistService {
       }
     })*/
     await page.setDefaultNavigationTimeout(60 * 2000)
-    await page.goto(`${url}/episode`)
+    await page.goto(`${url}/episodes`)
     await this.handleCaptchas(page)
 
     const elements: ElementHandle[] = await ClusterManager.findMany(
