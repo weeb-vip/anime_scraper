@@ -303,6 +303,7 @@ export class MyanimelistService {
   public async scrapeEpisode({ page, data }: any): Promise<void> {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data.url
+    const id: number = data.id
     /*await page.setRequestInterception(true)
     page.on('request', (request: any): void => {
       if (request.resourceType() === 'script') request.abort()
@@ -391,7 +392,7 @@ export class MyanimelistService {
           episodeNumber: episode.episodeNumber,
           aired: episode.aired,
           synopsis: episode.synopsis,
-          animeId: data.id,
+          animeId: id,
         }
         const episodeEntity = new AnimeEpisodesEntity()
         episodeEntity.title = parsedData.title
