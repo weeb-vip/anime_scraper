@@ -405,7 +405,7 @@ export class MyanimelistService {
     // for each episode, get the synopsis in sequence
     const episodeData = episodes
     for (const key in res) {
-      if (res[key] && res[key].episodeNumber) {
+      if (res[key]) {
         const element = res[key]
 
         episodeData.push({
