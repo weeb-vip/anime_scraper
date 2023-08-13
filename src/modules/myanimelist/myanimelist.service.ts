@@ -398,9 +398,7 @@ export class MyanimelistService {
         episodeEntity.episode = parsedData.episodeNumber
         episodeEntity.aired = parsedData.aired
         episodeEntity.synopsis = parsedData.synopsis
-        episodeEntity.animeID = parsedData.animeId
-
-        console.log(episodeEntity.animeID)
+        episodeEntity.anime_id = parsedData.animeId
 
         return this.animeService.upsertAnimeEpisode(data, episodeEntity)
       }),

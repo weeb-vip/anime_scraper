@@ -7,7 +7,7 @@ export class AnimeCharacterEntity {
   id: string
 
   @Column({ name: 'anime_id', nullable: false })
-  anime_id: string
+  animeID: string
 
   @Column({ name: 'name', nullable: false })
   name: string

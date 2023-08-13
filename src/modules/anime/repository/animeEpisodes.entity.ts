@@ -7,7 +7,7 @@ export class AnimeEpisodesEntity {
   id: string
 
   @Column({ name: 'anime_id', nullable: false })
-  animeID: string
+  anime_id: string
 
   @Column({ name: 'episode', nullable: false })
   episode: number

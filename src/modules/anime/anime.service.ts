@@ -21,14 +21,14 @@ export class AnimeService {
   upsertAnimeEpisode(animeID: string, episode: AnimeEpisodesEntity) {
     return this.animeEpisodesRepository.upsert({
       ...episode,
-      animeID: animeID,
+      anime_id: animeID,
     })
   }
 
   upsertAnimeCharacter(animeID: string, character: AnimeCharacterEntity) {
     return this.animeCharacterRepository.upsert({
       ...character,
-      anime_id: animeID,
+      animeID: animeID,
     })
   }
 }

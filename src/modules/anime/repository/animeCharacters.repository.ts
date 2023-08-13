@@ -30,7 +30,7 @@ export class AnimeCharacterRepository extends Repository<AnimeCharacterEntity> {
     data: AnimeCharacterEntity,
   ): Promise<AnimeCharacterEntity> {
     const foundAnimeCharacter = await this.findOneByAnimeIdAndName(
-      data.anime_id,
+      data.animeID,
       data.name,
     )
 

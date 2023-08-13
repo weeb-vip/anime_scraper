@@ -28,7 +28,7 @@ export class AnimeEpisodesRepository extends Repository<AnimeEpisodesEntity> {
 
   public async upsert(data: AnimeEpisodesEntity): Promise<AnimeEpisodesEntity> {
     const foundAnimeEpisodes = await this.findOneByAnimeIdAndEpisode(
-      data.animeID,
+      data.anime_id,
       data.episode,
     )
 
