@@ -378,6 +378,7 @@ export class MyanimelistService {
         const element = res[key]
 
         await page.goto(`${url}/episode/${element.episodeNumber}`)
+        await page.waitForNavigation()
         await this.handleCaptchas(page)
         const synopsis = await this.getEpisodeData(page)
         episodeData.push({
@@ -411,10 +412,10 @@ export class MyanimelistService {
 
   public async getEpisodeData(page) {
     // click on episode title
-    page.$eval('.episode-title', (el: any) => el.click())
-    // wait for page to load
-    await page.waitForNavigation()
-    await this.handleCaptchas(page)
+    // page.$eval('.episode-title', (el: any) => el.click())
+    // // wait for page to load
+    // await page.waitForNavigation()
+    // await this.handleCaptchas(page)
     // get synopsis
     const elements = await ClusterManager.findMany(page, 'h2')
 
