@@ -392,7 +392,7 @@ export class MyanimelistService {
           episodeNumber: episode.episodeNumber,
           aired: episode.aired,
           synopsis: episode.synopsis,
-          animeId: id,
+          animeId: id.toString(),
         }
         const episodeEntity = new AnimeEpisodesEntity()
         episodeEntity.title = parsedData.title
