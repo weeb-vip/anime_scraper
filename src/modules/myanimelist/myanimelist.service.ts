@@ -292,7 +292,10 @@ export class MyanimelistService {
         },
       })
     } catch (e) {
-      this.logger.error(`Error scraping episodes for ${upsertedAnime.title_en}`)
+      this.logger.error(
+        `Error scraping episodes for ${upsertedAnime.title_en}`,
+        e,
+      )
     }
     this.scrapeRecordService.recordSuccessfulScrape(data)
   }
