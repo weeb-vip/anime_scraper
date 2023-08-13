@@ -336,7 +336,6 @@ export class MyanimelistService {
       page,
       '.episode-list-data',
     )
-    console.log('elements: ', elements)
 
     // @ts-ignore
     const res: any = await elements.reduce(async (acc, element) => {
@@ -369,6 +368,8 @@ export class MyanimelistService {
         },
       }
     })
+
+    console.log(res)
 
     // for each episode, get the synopsis in sequence
     const episodeData = []
