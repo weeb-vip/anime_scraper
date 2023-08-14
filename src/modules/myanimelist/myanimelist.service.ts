@@ -127,6 +127,7 @@ export class MyanimelistService {
         this.logger.debug(`waiting 30 seconds`)
         await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
         this.logger.debug(`continue scrape`)
+        return this.handleCaptchas(page)
       }
     } catch (error) {
       // this.logger.debug('not a captcha')
