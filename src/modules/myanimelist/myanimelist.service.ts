@@ -400,7 +400,7 @@ export class MyanimelistService {
           aired: aired,
         },
       }
-    })
+    }, {})
 
     console.log(res)
     const episodeData = episodes
