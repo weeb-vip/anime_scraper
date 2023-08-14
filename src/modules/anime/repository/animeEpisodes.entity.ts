@@ -12,14 +12,14 @@ export class AnimeEpisodesEntity {
   @Column({ name: 'episode', nullable: false })
   episode: number
 
-  @Column({ name: 'title', nullable: true })
-  title: string
+  @Column({ name: 'title_en', nullable: true })
+  title_en: string
 
   @Column({ name: 'title_jp', nullable: true })
   title_jp: string
 
-  @Column({ name: 'aired', nullable: true })
-  aired: string
+  @Column({ name: 'aired', nullable: true, type: 'timestamptz' })
+  aired: Date | null
 
   @Column({ name: 'synopsis', nullable: true })
   synopsis: string

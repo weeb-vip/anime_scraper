@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import * as QueryString from 'query-string'
 import { ElementHandle } from 'puppeteer'
-import { parse as ParseDate, isValid } from 'date-fns'
+import { parse as ParseDate, isValid, parse } from 'date-fns'
 import { Logger } from 'winston'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import ClusterManager from '../puppeteer/clusterManager'
@@ -439,10 +439,11 @@ export class MyanimelistService {
           animeId: id.toString(),
         }
         const episodeEntity = new AnimeEpisodesEntity()
-        episodeEntity.title = parsedData.title
+        episodeEntity.title_en = parsedData.title
         episodeEntity.title_jp = parsedData.title_jp
         episodeEntity.episode = parsedData.episodeNumber
-        episodeEntity.aired = parsedData.aired
+        // Oct 20, 1999
+        episodeEntity.aired = parse(parsedData.aired, 'MMM d, yyyy', new Date())
         episodeEntity.synopsis = parsedData.synopsis
         episodeEntity.anime_id = parsedData.animeId
 
