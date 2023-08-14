@@ -417,8 +417,9 @@ export class MyanimelistService {
     // for each episode save to database
     await Promise.all(
       episodeData.map(async (episode: any) => {
+        // remove extra spaces and new lines
         const parsedData = {
-          title: episode.title,
+          title: episode.title.replace(/\s\s+/g, ' ').trim(),
           episodeNumber: episode.episodeNumber,
           aired: episode.aired,
           synopsis: episode.synopsis,
