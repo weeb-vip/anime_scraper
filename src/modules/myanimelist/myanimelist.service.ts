@@ -394,7 +394,7 @@ export class MyanimelistService {
 
       return {
         ...(await acc),
-        [title ? title.toLowerCase().replace(/:/g, '') : 'undefined']: {
+        [episodeNumber || 0]: {
           title: title,
           episodeNumber: episodeNumber || 0,
           aired: aired,
