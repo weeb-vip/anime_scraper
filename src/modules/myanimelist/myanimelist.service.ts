@@ -376,9 +376,20 @@ export class MyanimelistService {
       const title = await ClusterManager.findOneGivenElement(
         page,
         element,
-        '.episode-title',
+        '.episode-title a',
         'textContent',
       )
+      let JPTitle
+      try {
+        JPTitle = await ClusterManager.findOneGivenElement(
+          page,
+          element,
+          '.episode-title span:last-child',
+          'textContent',
+        )
+      } catch (e) {
+        JPTitle = null
+      }
       const episodeNumber = await ClusterManager.findOneGivenElement(
         page,
         element,
@@ -397,6 +408,7 @@ export class MyanimelistService {
         ...(await acc),
         [episodeNumber || 0]: {
           title: title,
+          title_jp: JPTitle,
           episodeNumber: episodeNumber || 0,
           aired: aired,
         },
@@ -420,6 +432,7 @@ export class MyanimelistService {
         // remove extra spaces and new lines
         const parsedData = {
           title: episode.title.replace(/\s\s+/g, ' ').trim(),
+          title_jp: episode.title_jp?.replace(/\s\s+/g, ' ').trim(),
           episodeNumber: episode.episodeNumber,
           aired: episode.aired,
           synopsis: episode.synopsis,
@@ -427,6 +440,7 @@ export class MyanimelistService {
         }
         const episodeEntity = new AnimeEpisodesEntity()
         episodeEntity.title = parsedData.title
+        episodeEntity.title_jp = parsedData.title_jp
         episodeEntity.episode = parsedData.episodeNumber
         episodeEntity.aired = parsedData.aired
         episodeEntity.synopsis = parsedData.synopsis

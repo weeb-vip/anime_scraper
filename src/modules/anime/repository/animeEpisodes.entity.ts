@@ -15,6 +15,9 @@ export class AnimeEpisodesEntity {
   @Column({ name: 'title', nullable: true })
   title: string
 
+  @Column({ name: 'title_jp', nullable: true })
+  title_jp: string
+
   @Column({ name: 'aired', nullable: true })
   aired: string
 
