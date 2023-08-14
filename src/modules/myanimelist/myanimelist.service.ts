@@ -402,6 +402,7 @@ export class MyanimelistService {
       }
     })
 
+    console.log(res)
     const episodeData = episodes
     for (const key in res) {
       if (res[key]) {
