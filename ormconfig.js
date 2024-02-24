@@ -25,7 +25,6 @@ module.exports = {
   username: process.env.PGUSERNAME,
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
-  ...(process.env.ENV !== 'local' ? ssl : {}),
   synchronize: false,
   ...(process.env.ENV !== 'local'
     ? { entities: ['modules/**/*.entity.{ts,js}'] }

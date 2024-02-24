@@ -40,9 +40,7 @@ const ssl: object = {
           username: config.env.PGUSERNAME,
           password: config.env.PGPASSWORD,
           database: config.env.PGDATABASE,
-          ...(process.env.ENV !== 'local' && process.env.ENV !== 'dev'
-            ? ssl
-            : {}),
+
           synchronize: false,
           ...(process.env.ENV !== 'local'
             ? { entities: ['modules/**/*.entity.{ts,js}'] }
