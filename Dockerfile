@@ -10,7 +10,7 @@ COPY tsconfig.json tsconfig.json
 COPY tsconfig.build.json tsconfig.build.json
 
 RUN apk update && apk add bash
-RUN yarn install --production=false
+RUN yarn install
 RUN yarn build
 
 FROM node:19.7.0-alpine3.16 AS PROD
@@ -25,6 +25,6 @@ COPY yarn.lock yarn.lock
 COPY --from=build /usr/src/app/dist ./
 COPY ormconfig.js ./ormconfig.js
 
-RUN yarn install --production=true
+RUN yarn install
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "main.js"]
