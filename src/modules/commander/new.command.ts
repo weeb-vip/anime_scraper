@@ -73,6 +73,14 @@ export class NewCommand implements CommandRunner {
   }
 
   @Option({
+    flags: '-cl, --climit [limit]',
+    description: 'Limit the number of items to scrape',
+  })
+  getLimit(val: string): number {
+    return parseInt(val)
+  }
+
+  @Option({
     flags: '-ch, --cheadless',
     description: 'Run headless',
   })
