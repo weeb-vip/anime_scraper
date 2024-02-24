@@ -22,6 +22,9 @@ class ClusterManager {
           '--remote-debugging-port=9222',
           '--remote-debugging-address=0.0.0.0', // You know what your doing?
           '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-extensions',
+          '--disable-plugins',
           '--disable-features=IsolateOrigins,site-per-process',
           '--blink-settings=imagesEnabled=true',
           '--no-sandbox',
