@@ -1,0 +1,50 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set repo name environment variable
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      - name: Build the Docker image
+        run: |
+          docker build --build-arg VERSION=${{ github.sha }} -t ${{ env.REPO_NAME }} .
+          docker tag ${{ env.REPO_NAME }} ${{ secrets.REGISTRY }}/weeb-vip/${{ env.REPO_NAME }}:${{ github.sha }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Push to Harbor Container Registry (test)
+        run: |
+          docker push ${{ secrets.REGISTRY }}/weeb-vip/${{ env.REPO_NAME }}:${{ github.sha }}
+          docker save ${{ env.REPO_NAME }} >> ${{ env.REPO_NAME }}.tar
+      - name: Set env
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+      - name: release
+        uses: cycjimmy/semantic-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          DOCKER_REPO_TEST: ${{ secrets.REGISTRY }}/weeb-vip/${{ env.REPO_NAME }}
+          DOCKER_REPO_PROD: ${{ secrets.REGISTRY }}/weeb-vip/${{ env.REPO_NAME }}
+        with:
+          semantic_version: 18
+          extra_plugins: |
+            @semantic-release/git@10.0.1
+            @semantic-release/exec@6.0.2
+            @semantic-release/changelog@6.0.1
