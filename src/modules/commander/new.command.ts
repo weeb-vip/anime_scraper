@@ -7,7 +7,7 @@ import { ScraperService } from '../scraper/scraper.service'
 
 interface BasicCollectCommandOptions {
   csite: string
-  limit?: number
+  climit?: number
   cheadless?: boolean
   file?: string
 
@@ -55,7 +55,7 @@ export class NewCommand implements CommandRunner {
       this.scrapeSite(
         passedParam,
         options.csite,
-        options?.limit,
+        options?.climit,
         !!options?.cheadless,
         options?.file !== undefined && options?.file !== null ? urls : null,
         options?.excludeFile !== undefined && options?.excludeFile !== null
