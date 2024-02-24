@@ -3,13 +3,15 @@ import puppeteer from 'puppeteer-extra'
 // @ts-ignore
 import * as StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import Recaptcha from 'puppeteer-extra-plugin-recaptcha'
+import { ConfigService } from '../config/config.service'
 import ClusterManager from './clusterManager'
+import { PuppeteerConfig } from './puppeteer.config'
 
 @Injectable()
 export class PuppeteerService {
   clusterManager: ClusterManager
   concurrency = 1
-  constructor() {
+  constructor(private readonly config: ConfigService<PuppeteerConfig>) {
     this.clusterManager = new ClusterManager()
   }
 
@@ -21,6 +23,7 @@ export class PuppeteerService {
     puppeteer.use(StealthPlugin())
     puppeteer.use(Recaptcha())
     await this.clusterManager.launch({
+      executablePath: this.config.env.PUPPETEER_EXECUTABLE_PATH,
       concurrency: limit,
       puppeteer,
       headless,

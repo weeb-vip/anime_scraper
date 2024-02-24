@@ -32,6 +32,7 @@ RUN set -x \
     ttf-opensans \
     ca-certificates \
     chromium
+
 COPY package.json package.json
 COPY yarn.lock yarn.lock
 COPY --from=build /usr/src/app/dist ./

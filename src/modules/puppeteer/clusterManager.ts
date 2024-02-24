@@ -4,8 +4,10 @@ import { Cluster } from 'puppeteer-cluster'
 class ClusterManager {
   private cluster: Cluster<any, any>
 
-  public async launch({ concurrency, puppeteer, headless }) {
+  public async launch({ concurrency, puppeteer, headless, executablePath }) {
+    console.log('THE EX', executablePath)
     this.cluster = await Cluster.launch({
+      executablePath,
       concurrency: Cluster.CONCURRENCY_CONTEXT,
       maxConcurrency: concurrency,
       retryLimit: 3,
@@ -22,6 +24,7 @@ class ClusterManager {
           '--disable-gpu',
           '--disable-features=IsolateOrigins,site-per-process',
           '--blink-settings=imagesEnabled=true',
+          '--no-sandbox',
         ],
       },
     })
