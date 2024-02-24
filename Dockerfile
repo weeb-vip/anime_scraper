@@ -20,6 +20,18 @@ ENV SERVICE_VERSION=$SERVICE_VERSION
 WORKDIR /usr/src/app
 
 RUN apk add --no-cache tini
+
+ENV CHROME_BIN="/usr/bin/chromium-browser" \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true"
+RUN set -x \
+    && apk update \
+    && apk upgrade \
+    && apk add --no-cache \
+    udev \
+    ttf-freefont \
+    ttf-opensans \
+    ca-certificates \
+    chromium
 COPY package.json package.json
 COPY yarn.lock yarn.lock
 COPY --from=build /usr/src/app/dist ./
