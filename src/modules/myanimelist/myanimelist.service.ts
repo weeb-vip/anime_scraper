@@ -182,7 +182,7 @@ export class MyanimelistService {
       show: 0,
     }
 
-    const urls = new Array(950).fill(0).map((_, i) => {
+    const urls = new Array(20).fill(0).map((_, i) => {
       params['show'] += 50
       return `${this.baseURL}${basePath}?${QueryString.stringify(params)}`
     })
