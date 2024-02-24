@@ -94,6 +94,57 @@ export class ScraperService {
     headless: boolean,
     urls?: string[],
     excludedUrls?: string[],
+    newlyAdded?: boolean,
+  ) {
+    await this.puppeteerService.setup(limit, headless)
+
+    await this.puppeteerService
+      .getManager()
+      .task(
+        this.myanimelistService.scrapeAnimePage.bind(this.myanimelistService),
+      )
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+    let processUrls: string[] = null
+    if (urls) {
+      processUrls = urls
+    } else {
+      processUrls = await this.myanimelistService.generateAnimeURLs({
+        new: newlyAdded,
+      })
+    }
+    if (excludedUrls) {
+      processUrls = processUrls.filter(
+        (url: string) => !excludedUrls.includes(url),
+      )
+    }
+    await Promise.all(
+      processUrls.map((url: string) =>
+        this.puppeteerService.getManager().queue(url),
+      ),
+    )
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    return 'ok'
+  }
+
+  async scrapeNewlyAdded(
+    param: string[],
+    limit: number,
+    headless: boolean,
+    urls?: string[],
+    excludedUrls?: string[],
   ) {
     await this.puppeteerService.setup(limit, headless)
 
@@ -129,6 +180,40 @@ export class ScraperService {
       processUrls.map((url: string) =>
         this.puppeteerService.getManager().queue(url),
       ),
+    )
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    return 'ok'
+  }
+
+  async collectNewlyAddedMyanimelist(
+    param: string[],
+    limit: number,
+    headless: boolean,
+  ) {
+    console.log('collectNewlyAddedMyanimelist')
+    await this.puppeteerService.setup(limit, headless)
+    await this.puppeteerService
+      .getManager()
+      .task(
+        this.myanimelistService.collectNewAnime.bind(this.myanimelistService),
+      )
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+    const urls = await this.myanimelistService.generateNewlyAddedURLs()
+    await Promise.all(
+      urls.map((url: string) => this.puppeteerService.getManager().queue(url)),
     )
     await this.puppeteerService.getManager().idle()
     await this.puppeteerService.getManager().close()

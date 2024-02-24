@@ -1,26 +1,24 @@
 import * as path from 'path'
 import * as fs from 'fs'
 import { Inject } from '@nestjs/common'
-import { Command, CommandRunner, Option } from 'nest-commander'
+import { Command, CommandRunner, Option, SubCommand } from 'nest-commander'
 import { Logger } from 'winston'
 import { ScraperService } from '../scraper/scraper.service'
-import { NewCommand } from './new.command'
 
-interface BasicCommandOptions {
-  site: string
+interface BasicCollectCommandOptions {
+  csite: string
   limit?: number
-  headless?: boolean
+  cheadless?: boolean
   file?: string
+
   excludeFile?: string
-  new?: boolean
 }
 
-@Command({
-  name: 'scrape',
+@SubCommand({
+  name: 'new',
   description: 'A parameter parse',
-  subCommands: [NewCommand],
 })
-export class ScraperCommand implements CommandRunner {
+export class NewCommand implements CommandRunner {
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
@@ -29,8 +27,11 @@ export class ScraperCommand implements CommandRunner {
 
   async run(
     passedParam: string[],
-    options?: BasicCommandOptions,
+    options?: BasicCollectCommandOptions,
   ): Promise<void> {
+    console.log('running new command')
+    console.log(passedParam)
+    console.log(options)
     let urls: string[] = null
     let excludedUrls: string[] = null
     if (options?.file !== undefined && options?.file !== null) {
@@ -49,23 +50,22 @@ export class ScraperCommand implements CommandRunner {
       excludedUrls = contents.split(/\r?\n/)
       console.log(excludedUrls)
     }
-    if (options?.site !== undefined && options?.site !== null) {
+    if (options?.csite !== undefined && options?.csite !== null) {
+      console.log('running new command with -s')
       this.scrapeSite(
         passedParam,
-        options.site,
+        options.csite,
         options?.limit,
-        !!options?.headless,
+        !!options?.cheadless,
         options?.file !== undefined && options?.file !== null ? urls : null,
         options?.excludeFile !== undefined && options?.excludeFile !== null
           ? excludedUrls
           : null,
-        options.new !== undefined && options.new !== null ? options.new : false,
       )
     }
   }
-
   @Option({
-    flags: '-s, --site [site]',
+    flags: '-cs, --csite [site]',
     description: 'What site to scrape',
   })
   getSite(val: string): string {
@@ -73,47 +73,12 @@ export class ScraperCommand implements CommandRunner {
   }
 
   @Option({
-    flags: '-l, --limit [limit]',
-    description: 'What site to scrape',
-  })
-  getLimit(val: string): number {
-    return parseInt(val, 10)
-  }
-
-  @Option({
-    flags: '-f, --file [file]',
-    description: 'Urls from json file (array)',
-  })
-  getFile(val: string): string {
-    this.logger.info(`Pased val: ${val}`)
-    return val
-  }
-
-  @Option({
-    flags: '-e --exclude-file [exclude-file]',
-    description: 'Urls from list ',
-  })
-  getExcludeFile(val: string): string {
-    this.logger.info(`Pased val: ${val}`)
-    return val
-  }
-
-  @Option({
-    flags: '-h, --headless',
+    flags: '-ch, --cheadless',
     description: 'Run headless',
   })
-  getHeadless(): boolean {
+  getHeadless(val: string): boolean {
     return true
   }
-
-  @Option({
-    flags: '-n, --new',
-    description: 'Scrape only new anime',
-  })
-  getNew(): boolean {
-    return true
-  }
-
   scrapeSite(
     param: string[],
     option: string,
@@ -121,23 +86,15 @@ export class ScraperCommand implements CommandRunner {
     headless: boolean,
     urls?: string[],
     excludedUrls?: string[],
-    newlyadded?: boolean,
   ): void {
-    this.logger.info(`scape site: ${option}`)
+    this.logger.info(`scape site2: ${option}`)
     switch (option) {
       case 'anidb':
         this.scapperService.scrapeAnidb(param)
         break
       case 'myanimelist':
-        console.log(excludedUrls)
-        this.scapperService.scrapeMyAnimeList(
-          param,
-          limit,
-          headless,
-          urls,
-          excludedUrls,
-          newlyadded,
-        )
+        console.log('starting scrape')
+        this.scapperService.collectNewlyAddedMyanimelist(param, limit, headless)
         break
 
       /*case 'mal':

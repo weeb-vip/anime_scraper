@@ -1,4 +1,4 @@
-import { EntityRepository, Repository } from 'typeorm'
+import { Between, EntityRepository, LessThanOrEqual, Repository } from 'typeorm'
 import * as _ from 'lodash'
 import { IMyanimelist, RECORD_TYPE } from './interface'
 import { MyanimelistLinks } from './myanimelist.entity'
@@ -84,6 +84,30 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
     const links: MyanimelistLinks[] = await this.find({
       where: {
         type: RECORD_TYPE.Anime,
+      },
+    })
+    return links.map((link: MyanimelistLinks) => ({
+      id: link.id,
+      name: link.name,
+      type: link.type,
+      link: link.link,
+      updatedAt: link.updatedAt,
+    }))
+  }
+
+  async getAllNewAnime(): Promise<IMyanimelist[]> {
+    // current date
+    const today = new Date()
+    // today minus 1 day
+    const yesterday = new Date(
+      new Date(today).setDate(today.getDate() - 1),
+    ).toISOString()
+
+    const links: MyanimelistLinks[] = await this.find({
+      where: {
+        type: RECORD_TYPE.Anime,
+        // created at is between yesterday and today
+        createdAt: Between(yesterday, today.toISOString()),
       },
     })
     return links.map((link: MyanimelistLinks) => ({

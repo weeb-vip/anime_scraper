@@ -31,7 +31,11 @@ export class MyanimelistService {
     private readonly scrapeRecordService: ScrapeRecordService,
   ) {}
 
-  // async ({ page, data }: any) => getFightersOnPage({ page, data }, addToDb)
+  /**
+   * Collects anime names from myanimelist
+   * @param page
+   * @param data
+   */
   async collectAnime({ page, data }: any) {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
@@ -74,6 +78,73 @@ export class MyanimelistService {
       page,
       'table > tbody tr.ranking-list td.title h3 a',
     )
+    console.log(linkElements)
+    const links: readonly { name: string; url: string }[] = await Promise.all(
+      linkElements.map(async (element: ElementHandle) => ({
+        name: await page.evaluate((el: any) => el.textContent, element),
+        url: await page.evaluate((el: any) => el.href, element),
+      })),
+    )
+    console.log(links)
+
+    await Promise.all(
+      links.map((link) => {
+        return this.myanimelistlinkRepo.upsert({
+          name: link.name,
+          link: link.url,
+          type: RECORD_TYPE.Anime,
+        })
+      }),
+    )
+  }
+
+  /**
+   * Collects newly added anime from myanimelist
+   * @param page
+   * @param data
+   */
+  async collectNewAnime({ page, data }: any) {
+    this.logger.debug(`Collecting anime on page ${data}`)
+    const url: string = data
+    // await page.setRequestInterception(true)
+    /*page.on('request', (request: any): void => {
+      if (request.resourceType() === 'script') request.abort()
+      else {
+        request.continue()
+      }
+    })*/
+    await page.goto(url)
+    const searchText =
+      'We are temporarily restricting site connections due to heavy access.\n' +
+      '        Please click "Submit" to verify that you are not a bot.\n' +
+      '        \n' +
+      '          Some error occured. please try again.'
+    try {
+      const foundText = await ClusterManager.pageFindOne(
+        page,
+        '.display-submit .caption',
+        'textContent',
+      )
+      this.logger.debug(`found text: ${foundText}`)
+      if (foundText.trim() === searchText) {
+        this.logger.debug(`found captcha, will wait 5 secconds`)
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+        this.logger.debug(`clicking button`)
+        await page.$eval('button[type="submit"]', (el: any) => el.click())
+        this.logger.debug(`waiting 30 seconds`)
+        await new Promise((resolve) => setTimeout(resolve, 30 * 1000))
+        this.logger.debug(`continue scrape`)
+      }
+    } catch (error) {
+      this.logger.debug('not a captcha')
+      this.logger.debug('Scraping page...')
+    }
+    this.logger.debug(`Page ${data} loaded`)
+
+    const linkElements: ElementHandle[] = await ClusterManager.findMany(
+      page,
+      'table > tbody tr div.title > a:nth-child(2)',
+    )
     const links: readonly { name: string; url: string }[] = await Promise.all(
       linkElements.map(async (element: ElementHandle) => ({
         name: await page.evaluate((el: any) => el.textContent, element),
@@ -101,7 +172,32 @@ export class MyanimelistService {
     return urls
   }
 
-  async generateAnimeURLs(): Promise<string[]> {
+  async generateNewlyAddedURLs(): Promise<string[]> {
+    const basePath = '/anime.php'
+    const params = {
+      o: '9',
+      'c%5B0%5D': '&c%5B1%5D=d',
+      cv: '2',
+      w: '1',
+      show: 0,
+    }
+
+    const urls = new Array(950).fill(0).map((_, i) => {
+      params['show'] += 50
+      return `${this.baseURL}${basePath}?${QueryString.stringify(params)}`
+    })
+    return urls
+  }
+
+  // generate anime urls, default for new is false
+  async generateAnimeURLs(
+    { new: isNew = false }: { new: boolean } = { new: false },
+  ): Promise<string[]> {
+    if (isNew) {
+      return (await this.myanimelistlinkRepo.getAllNewAnime()).map(
+        (IMyanimelist) => IMyanimelist.link,
+      )
+    }
     return (await this.myanimelistlinkRepo.getAllAnime()).map(
       (IMyanimelist) => IMyanimelist.link,
     )

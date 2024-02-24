@@ -6,6 +6,7 @@ import { TypeormConnectorModule } from '../postgres-connector/postgres-connector
 import { alignColorsAndTime } from '../common/loggerformat'
 import { ScraperCommand } from './scrape.command'
 import { CollectCommand } from './collect.command'
+import { NewCommand } from './new.command'
 
 @Module({
   imports: [
@@ -46,6 +47,6 @@ import { CollectCommand } from './collect.command'
     }),
   ],
   controllers: [],
-  providers: [ScraperCommand, CollectCommand],
+  providers: [NewCommand, ScraperCommand, CollectCommand],
 })
 export class ScraperCommandModule {}
