@@ -329,6 +329,7 @@ export class MyanimelistService {
     const rank = rankContent ? parseInt(rankContent.replace('#', ''), 10) : null
 
     const parsedData = {
+      image_url: await ClusterManager.pageFindOne(page, '.leftside img', 'src'),
       ranking: rank,
       anidbid: anidbId,
       title_en: res['english'],
