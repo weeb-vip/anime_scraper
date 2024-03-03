@@ -507,7 +507,7 @@ export class MyanimelistService {
                 'h2'
             )
             const synopsisTitle = synopsisCandidates.find((el: ElementHandle) => {
-                return page.evaluate((el: any) => el.textContent, el).includes('Synopsis')
+                return (await page.evaluate((el: any) => el.textContent, el)).includes('Synopsis')
             })
             // get next sibling of synopsisTitle
             const synopsis = await page.evaluate((el: any) => el.nextElementSibling.textContent, synopsisTitle)
