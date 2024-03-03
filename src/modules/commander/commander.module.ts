@@ -4,14 +4,19 @@ import { WinstonModule } from 'nest-winston'
 import { ScraperModule } from '../scraper/scraper.module'
 import { TypeormConnectorModule } from '../postgres-connector/postgres-connector.module'
 import { alignColorsAndTime } from '../common/loggerformat'
+import { AnimeModule } from '../anime/anime.module'
+import { DeduplicateModule } from '../deduplicate/deduplicate.module'
 import { ScraperCommand } from './scrape.command'
 import { CollectCommand } from './collect.command'
 import { NewCommand } from './new.command'
+
+import { DeduplicateCommand } from './deduplicate.command'
 
 @Module({
   imports: [
     ScraperModule,
     TypeormConnectorModule,
+    DeduplicateModule,
     WinstonModule.forRoot({
       // options
       transports: [
@@ -47,6 +52,6 @@ import { NewCommand } from './new.command'
     }),
   ],
   controllers: [],
-  providers: [NewCommand, ScraperCommand, CollectCommand],
+  providers: [NewCommand, ScraperCommand, CollectCommand, DeduplicateCommand],
 })
 export class ScraperCommandModule {}

@@ -188,4 +188,46 @@ export class AnimeRepository extends Repository<Anime> {
       updatedAt: saved.updatedAt,
     }
   }
+
+  async getDuplicates(): Promise<Anime[]> {
+    const duplicates = await this.query(`
+      SELECT t.*
+FROM anime t
+JOIN (
+    SELECT title_en
+    FROM anime
+    GROUP BY title_en
+    HAVING COUNT(*) > 1
+) duplicates
+ON t.title_en = duplicates.title_en
+    `)
+    return duplicates.map((item: any) => {
+      return {
+        id: item.id,
+        anidbid: item.anidbid,
+        type: item.type,
+        title_en: item.title_en,
+        title_jp: item.title_jp,
+        title_romaji: item.title_romaji,
+        title_kanji: item.title_kanji,
+        title_synonyms: item.title_synonyms,
+        image_url: item.image_url,
+        synopsis: item.synopsis,
+        episodes: item.episodes,
+        status: item.status,
+        startDate: isValid(item.startDate) ? item.startDate : null,
+        endDate: isValid(item.endDate) ? item.endDate : null,
+        genres: item.genres,
+        duration: item.duration,
+        broadcast: item.broadcast,
+        source: item.source,
+        licensors: item.licensors,
+        studios: item.studios,
+        rating: item.rating,
+        ranking: item.ranking,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      }
+    })
+  }
 }

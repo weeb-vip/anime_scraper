@@ -41,4 +41,8 @@ export class AnimeEpisodesRepository extends Repository<AnimeEpisodesEntity> {
 
     return await this.save(data)
   }
+
+  public async deleteByAnimeId(anime_id: string): Promise<void> {
+    await this.delete({ anime_id })
+  }
 }

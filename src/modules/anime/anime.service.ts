@@ -31,4 +31,16 @@ export class AnimeService {
       animeID: animeID,
     })
   }
+
+  getDuplicates() {
+    return this.animeRepository.getDuplicates()
+  }
+
+  deleteAnime(id: number) {
+    return this.animeRepository.delete(id)
+  }
+
+  deleteAnimeEpisodes(animeId: string) {
+    return this.animeEpisodesRepository.deleteByAnimeId(animeId)
+  }
 }
