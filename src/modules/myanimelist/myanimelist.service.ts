@@ -506,7 +506,7 @@ export class MyanimelistService {
                 page,
                 'h2'
             )
-            const synopsisTitle = synopsisCandidates.find((el: ElementHandle) => {
+            const synopsisTitle = synopsisCandidates.find(async (el: ElementHandle) => {
                 return (await page.evaluate((el: any) => el.textContent, el)).includes('Synopsis')
             })
             // get next sibling of synopsisTitle
