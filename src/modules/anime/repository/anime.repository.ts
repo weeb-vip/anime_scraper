@@ -122,7 +122,6 @@ export class AnimeRepository extends Repository<Anime> {
     let savedLink: Anime = await this.findOne({
       title_en: cleanBody.title_en,
       title_jp: cleanBody.title_jp,
-      type: cleanBody.type,
     })
     if (savedLink) {
       await this.update({ id: savedLink.id }, cleanBody)
