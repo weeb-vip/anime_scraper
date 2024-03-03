@@ -335,7 +335,7 @@ export class MyanimelistService {
       title_en: res['english'],
       title_jp: res['japanese'],
       title_synonyms: res['synonyms'] ? res['synonyms'].split(',') : null,
-      type: RECORD_TYPE.Anime,
+      type: res['type'],
       episodes: res['episodes'] ? parseInt(res['episodes'], 10) : null,
       status: res['status'],
       startDate:
