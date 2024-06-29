@@ -8,6 +8,7 @@ import ClusterManager from '../puppeteer/clusterManager'
 import { AnimeService } from '../anime/anime.service'
 import { ScrapeRecordService } from '../scrape_record/scrape_record.service'
 import { AnimeEpisodesEntity } from '../anime/repository/animeEpisodes.entity'
+import clusterManager from '../puppeteer/clusterManager'
 import { IAnimeRequest } from './interfaces'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 import { RECORD_TYPE } from './repository/interface'
@@ -432,37 +433,13 @@ export class MyanimelistService {
     // await page.waitForNavigation()
 
     // check if .pagination exists
-    const paginationExists = await ClusterManager.wait(page, '.pagination', 100)
-    let episodes = []
+    const paginationExists = await ClusterManager.wait(
+      page,
+      '.pagination',
+      1000,
+    )
+    const episodes = []
     this.logger.debug(`pagenation exists?: ${paginationExists}`)
-    if (paginationExists) {
-      // get pagination links
-      const paginationLinks: ElementHandle[] = await ClusterManager.findMany(
-        page,
-        '.pagination a',
-      )
-      // get link after active link based on class 'current'
-      const nextLink = await paginationLinks.find(
-        async (link: ElementHandle) => {
-          return (
-            await page.evaluate((el: any) => el.className, link)
-          ).includes('current')
-        },
-      )
-      const index = paginationLinks.indexOf(nextLink)
-      if (!(index === paginationLinks.length - 1)) {
-        const nextLinkUrl = await page.evaluate(
-          (el: any) => el.href,
-          paginationLinks[index + 1],
-        )
-        episodes = episodes.concat(
-          await this.scrapeEpisode({
-            page,
-            data: { ...data, url: nextLinkUrl },
-          }),
-        )
-      }
-    }
 
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
@@ -542,6 +519,9 @@ export class MyanimelistService {
     // for each episode save to database
     await Promise.all(
       episodeData.map(async (episode: any) => {
+        if (!episode) {
+          return
+        }
         // remove extra spaces and new lines
         const parsedData = {
           title: episode.title.replace(/\s\s+/g, ' ').trim(),
@@ -568,5 +548,33 @@ export class MyanimelistService {
         )
       }),
     )
+
+    if (paginationExists) {
+      // get pagination links
+      const paginationLinks: ElementHandle[] = await ClusterManager.findMany(
+        page,
+        '.pagination .link',
+      )
+      // get link after active link based on class 'current'
+      const currentLink = (
+        await ClusterManager.findMany(page, '.pagination .link.current')
+      )[0]
+      console.log(currentLink)
+      // get next sibling of currentLink
+      const nextLink = await page.evaluateHandle(
+        (el: any) => el.nextElementSibling,
+        currentLink,
+      )
+
+      if (nextLink) {
+        // get href of nextLink
+        const nextLinkHref = await page.evaluate((el: any) => el.href, nextLink)
+
+        await this.scrapeEpisode({
+          page,
+          data: { ...data, url: nextLinkHref },
+        })
+      }
+    }
   }
 }
