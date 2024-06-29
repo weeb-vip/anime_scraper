@@ -11,6 +11,7 @@ export class DeduplicateService {
 
   async deduplicate(): Promise<void> {
     const duplicates = await this.animeService.getDuplicates()
+    console.log(duplicates)
     const duplicateByNames = new Map<string, any[]>()
     for (const duplicate of duplicates) {
       if (!duplicateByNames.has(duplicate.title_en)) {
