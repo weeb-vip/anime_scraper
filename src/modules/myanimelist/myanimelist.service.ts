@@ -30,7 +30,8 @@ export class MyanimelistService {
     private readonly myanimelistlinkRepo: MyanimelistlinkRepository,
     private readonly animeService: AnimeService,
     private readonly scrapeRecordService: ScrapeRecordService,
-  ) {}
+  ) {
+  }
 
   /**
    * Collects anime names from myanimelist
@@ -235,13 +236,19 @@ export class MyanimelistService {
   async scrapeAnimePage({ page, data }: any) {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
-    /*await page.setRequestInterception(true)
-        page.on('request', (request: any): void => {
-          if (request.resourceType() === 'script') request.abort()
-          else {
-            request.continue()
-          }
-        })*/
+    await page.setRequestInterception(true)
+    page.on('request', (request: any): void => {
+      // if request ends in js, abort
+      if (request.url().endsWith('.js')) {
+        request.abort()
+      } else {
+        request.continue()
+      }
+      // if (request.resourceType() === 'script') request.abort()
+      // else {
+      //   request.continue()
+      // }
+    })
     await page.setDefaultNavigationTimeout(60 * 2000)
     await page.goto(url)
     await this.handleCaptchas(page)
@@ -328,7 +335,30 @@ export class MyanimelistService {
     )
     this.logger.debug(`rankContent: ${rankContent}`)
     const rank = rankContent ? parseInt(rankContent.replace('#', ''), 10) : null
+    function getFirstHalfIfEqual(str) {
+      // Check if the string length is even
+      if (str.length % 2 !== 0) {
+        return null; // or handle odd length strings as needed
+      }
 
+      // Split the string in half
+      const halfLength = str.length / 2;
+      const firstHalf = str.slice(0, halfLength);
+      const secondHalf = str.slice(halfLength);
+
+      // Check if both halves are equal
+      if (firstHalf === secondHalf) {
+        return firstHalf;
+      } else {
+        return str; // or handle unequal halves as needed
+      }
+    }
+    const genres: string[] = (res['genres'] ? res['genres'].split(',') : []).map(
+      // clear out whitespace before and after
+      genre => genre.trim(),
+    ).map(
+      genre =>  getFirstHalfIfEqual(genre),
+    )
     const parsedData = {
       image_url: await ClusterManager.pageFindOne(page, '.leftside img', 'src'),
       ranking: rank,
@@ -350,10 +380,10 @@ export class MyanimelistService {
           ),
         )
           ? ParseDate(
-              res['aired'].split('to')[0].trim(),
-              'LLL d, yyyy',
-              new Date(),
-            )
+            res['aired'].split('to')[0].trim(),
+            'LLL d, yyyy',
+            new Date(),
+          )
           : null,
       endDate:
         res['aired'] &&
@@ -366,12 +396,12 @@ export class MyanimelistService {
           ),
         )
           ? ParseDate(
-              res['aired'].split('to')[1].trim(),
-              'LLL d, yyyy',
-              new Date(),
-            )
+            res['aired'].split('to')[1].trim(),
+            'LLL d, yyyy',
+            new Date(),
+          )
           : null,
-      genres: res['genres'] ? res['genres'].split(',') : null,
+      genres,
       duration: res['duration'],
       broadcast: res['broadcast'],
       licensors: res['licensors'] ? res['licensors'].split(',') : null,
