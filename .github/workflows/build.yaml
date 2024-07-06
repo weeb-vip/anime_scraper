@@ -54,7 +54,7 @@ jobs:
           git fetch --tags
           export GITHUB_REF_NAME=$(git describe --tags --abbrev=0)
           echo "RELEASE_VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
-            - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Set env
         run: |
           git fetch --tags
