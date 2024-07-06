@@ -48,7 +48,7 @@ jobs:
             @semantic-release/git@10.0.1
             @semantic-release/exec@6.0.2
             @semantic-release/changelog@6.0.1
-
+      - uses: actions/checkout@v3
       - name: Set env
         run: |
           git fetch --tags
