@@ -313,7 +313,7 @@ export class MyanimelistService {
 
     const anidbLink =
       (await linkHrefs).find((link: string) => {
-        return link.includes('https://anidb.net/')
+        return link.includes('anidb.net/')
       }) || '?aid='
 
     // get query params from anidb link
@@ -335,29 +335,31 @@ export class MyanimelistService {
     )
     this.logger.debug(`rankContent: ${rankContent}`)
     const rank = rankContent ? parseInt(rankContent.replace('#', ''), 10) : null
+
     function getFirstHalfIfEqual(str) {
       // Check if the string length is even
       if (str.length % 2 !== 0) {
-        return null; // or handle odd length strings as needed
+        return null // or handle odd length strings as needed
       }
 
       // Split the string in half
-      const halfLength = str.length / 2;
-      const firstHalf = str.slice(0, halfLength);
-      const secondHalf = str.slice(halfLength);
+      const halfLength = str.length / 2
+      const firstHalf = str.slice(0, halfLength)
+      const secondHalf = str.slice(halfLength)
 
       // Check if both halves are equal
       if (firstHalf === secondHalf) {
-        return firstHalf;
+        return firstHalf
       } else {
-        return str; // or handle unequal halves as needed
+        return str // or handle unequal halves as needed
       }
     }
+
     const genres: string[] = (res['genres'] ? res['genres'].split(',') : []).map(
       // clear out whitespace before and after
       genre => genre.trim(),
     ).map(
-      genre =>  getFirstHalfIfEqual(genre),
+      genre => getFirstHalfIfEqual(genre),
     )
     const parsedData = {
       image_url: await ClusterManager.pageFindOne(page, '.leftside img', 'src'),
@@ -410,8 +412,11 @@ export class MyanimelistService {
       synopsis: res['synopsis'],
       rating: rating ? rating : null,
     }
-
-    const upsertedAnime = await this.animeService.upsertAnime(parsedData)
+    const parsedStartDate = parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
+    const upsertedAnime = await this.animeService.upsertAnime({
+      ...parsedData,
+      startDate: parsedStartDate,
+    })
     try {
       await this.scrapeEpisode({
         page,
