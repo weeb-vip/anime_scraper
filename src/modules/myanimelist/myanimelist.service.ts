@@ -412,7 +412,7 @@ export class MyanimelistService {
       synopsis: res['synopsis'],
       rating: rating ? rating : null,
     }
-    const parsedStartDate = parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
+    const parsedStartDate = !parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
       startDate: parsedStartDate,
