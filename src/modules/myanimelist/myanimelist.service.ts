@@ -412,7 +412,24 @@ export class MyanimelistService {
       synopsis: res['synopsis'],
       rating: rating ? rating : null,
     }
-    const parsedStartDate = !parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
+    // find image by meta tag if its null
+    var image = parsedData.image_url
+    if (image == null) {
+      image = await ClusterManager.pageFindOne(
+        page,
+        'meta[property="og:image"]',
+        'content',
+      )
+    }
+    parsedData.image_url = image
+    console.log(image)
+    var parsedStartDate = null
+    if (res['aired'].toLowerCase() == "not available") {
+      parsedStartDate = null
+    } else {
+      parsedStartDate = !parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
+    }
+
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
       startDate: parsedStartDate,
