@@ -427,7 +427,7 @@ export class MyanimelistService {
     if (res['aired'].toLowerCase() == "not available") {
       parsedStartDate = null
     } else {
-      parsedStartDate = !parsedData.startDate ? ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date()) : null
+      parsedStartDate = isValid(parsedData.startDate) ? parsedData.startDate : ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date())
     }
 
     const upsertedAnime = await this.animeService.upsertAnime({
