@@ -41,9 +41,9 @@ RUN set -x \
 COPY package.json package.json
 COPY yarn.lock yarn.lock
 COPY --from=build /usr/src/app/dist ./
+COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY ormconfig.js ./ormconfig.js
 
 RUN yarn install
-RUN yarn add nest-commander
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "main.js"]
