@@ -48,4 +48,4 @@ COPY ormconfig.js ./ormconfig.js
 RUN yarn install
 RUN yarn build
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "main.js"]
+CMD ["node", "dist/main.js"]
