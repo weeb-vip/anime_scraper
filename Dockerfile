@@ -44,5 +44,6 @@ COPY --from=build /usr/src/app/dist ./
 COPY ormconfig.js ./ormconfig.js
 
 RUN yarn install
+RUN yarn add nest-commander
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "main.js"]
