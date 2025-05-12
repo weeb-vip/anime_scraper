@@ -17,7 +17,7 @@ RUN yarn install
 RUN yarn build
 
 FROM node:20.17.0-alpine AS PROD
-ENV NODE_ENV production
+ENV NODE_ENV development
 ARG SERVICE_VERSION
 ENV SERVICE_VERSION=$SERVICE_VERSION
 RUN corepack enable
