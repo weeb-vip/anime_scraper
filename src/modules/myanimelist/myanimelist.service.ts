@@ -423,25 +423,35 @@ export class MyanimelistService {
     }
     parsedData.image_url = image
     console.log(image)
-    var parsedStartDate = null
-    if (res['aired'].toLowerCase() == "not available") {
+    let parsedStartDate: Date | null = null
+
+    if (res['aired'].toLowerCase() === "not available") {
       parsedStartDate = null
     } else {
-      parsedStartDate = isValid(parsedData.startDate) ? parsedData.startDate : ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date())
-    }
+      const airedFirstPart = res['aired'].split('to')[0].trim()
+      // Try parsing with year-only format first
+      parsedStartDate = isValid(parsedData.startDate)
+        ? parsedData.startDate
+        : ParseDate(airedFirstPart, 'yyyy', new Date())
 
-    // it could be that the format of aired is like Oct 2025 to ?, handle that as well
-    if (parsedStartDate == null) {
-      const aired = res['aired'].split('to')[0].trim()
-      const dateParts = aired.split(' ')
-      if (dateParts.length === 2) {
-        const month = dateParts[0]
-        const year = dateParts[1]
-        parsedStartDate = ParseDate(`${month} 1, ${year}`, 'MMM d, yyyy', new Date())
+      // If parsing failed, try "Oct 2025" format
+      if (!isValid(parsedStartDate)) {
+        const dateParts = airedFirstPart.split(' ').filter(Boolean)
+
+        if (dateParts.length === 2) {
+          const [month, year] = dateParts
+          const formatted = `${month} 1, ${year}`
+          parsedStartDate = ParseDate(formatted, 'MMM d, yyyy', new Date())
+
+          if (!isValid(parsedStartDate)) {
+            console.warn('Still invalid:', formatted)
+            parsedStartDate = null
+          }
+        }
       }
     }
 
-    console.log(`parsedStartDate: ${parsedStartDate}`)
+
 
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
