@@ -441,6 +441,8 @@ export class MyanimelistService {
       }
     }
 
+    console.log(`parsedStartDate: ${parsedStartDate}`)
+
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
       startDate: parsedStartDate,
