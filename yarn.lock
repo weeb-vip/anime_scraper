@@ -609,12 +609,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@golevelup/nestjs-discovery@npm:3.0.0":
-  version: 3.0.0
-  resolution: "@golevelup/nestjs-discovery@npm:3.0.0"
+"@fig/complete-commander@npm:^3.0.0":
+  version: 3.2.0
+  resolution: "@fig/complete-commander@npm:3.2.0"
   dependencies:
-    lodash: "npm:^4.17.15"
-  checksum: 10c0/56d4077fcd7f86115491e91e6ea6b76bafb0aefab66ccd5b3413b96f0a952c3f0977890c59d1d020447b00734a64cb482534da4112373a5af618a62390e8eb5e
+    prettier: "npm:^3.2.5"
+  peerDependencies:
+    commander: ^11.1.0
+  checksum: 10c0/feca2fd780486ef8acd3a5f231b07304b9c8d61a1dd5f3fa75568295fd39122239893ca8178c80200c5d5336a0f9e4a0d898bd286dfc65ad192e50f7a80f3b3b
+  languageName: node
+  linkType: hard
+
+"@golevelup/nestjs-discovery@npm:4.0.3":
+  version: 4.0.3
+  resolution: "@golevelup/nestjs-discovery@npm:4.0.3"
+  dependencies:
+    lodash: "npm:^4.17.21"
+  peerDependencies:
+    "@nestjs/common": ^10.x || ^11.0.0
+    "@nestjs/core": ^10.x || ^11.0.0
+  checksum: 10c0/e5b95a5d8a25a5ca98ea50f66cb71870ab075f25080782ea2a2c550e17a1c61148b0c18f6b013eec3df225afe6989531cb9f6bb7f289028bb446e6dc867a5b0f
   languageName: node
   linkType: hard
 
@@ -2771,7 +2785,7 @@ __metadata:
     jest: "npm:27.0.6"
     lint-staged: "npm:>=10"
     lodash: "npm:^4.17.21"
-    nest-commander: "npm:^2.3.0"
+    nest-commander: "npm:^3.17.0"
     nest-winston: "npm:^1.6.1"
     pg: "npm:^8.7.1"
     pidusage: "npm:^2.0.21"
@@ -3972,17 +3986,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"commander@npm:11.1.0":
+  version: 11.1.0
+  resolution: "commander@npm:11.1.0"
+  checksum: 10c0/13cc6ac875e48780250f723fb81c1c1178d35c5decb1abb1b628b3177af08a8554e76b2c0f29de72d69eef7c864d12613272a71fabef8047922bc622ab75a179
+  languageName: node
+  linkType: hard
+
 "commander@npm:4.1.1":
   version: 4.1.1
   resolution: "commander@npm:4.1.1"
   checksum: 10c0/84a76c08fe6cc08c9c93f62ac573d2907d8e79138999312c92d4155bc2325d487d64d13f669b2000c9f8caf70493c1be2dac74fec3c51d5a04f8bc3ae1830bab
-  languageName: node
-  linkType: hard
-
-"commander@npm:8.3.0":
-  version: 8.3.0
-  resolution: "commander@npm:8.3.0"
-  checksum: 10c0/8b043bb8322ea1c39664a1598a95e0495bfe4ca2fad0d84a92d7d1d8d213e2a155b441d2470c8e08de7c4a28cf2bc6e169211c49e1b21d9f7edc6ae4d9356060
   languageName: node
   linkType: hard
 
@@ -4180,16 +4194,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cosmiconfig@npm:7.0.1":
-  version: 7.0.1
-  resolution: "cosmiconfig@npm:7.0.1"
+"cosmiconfig@npm:8.3.6":
+  version: 8.3.6
+  resolution: "cosmiconfig@npm:8.3.6"
   dependencies:
-    "@types/parse-json": "npm:^4.0.0"
-    import-fresh: "npm:^3.2.1"
-    parse-json: "npm:^5.0.0"
+    import-fresh: "npm:^3.3.0"
+    js-yaml: "npm:^4.1.0"
+    parse-json: "npm:^5.2.0"
     path-type: "npm:^4.0.0"
-    yaml: "npm:^1.10.0"
-  checksum: 10c0/3cd38525ba22e13da0ef9f4be131df226c94f5b96fb50f6297eb17baeedefe15cf5819f8c73cde69f71cc5034e712c86bd20c7756883dd8094087680ecc25932
+  peerDependencies:
+    typescript: ">=4.9.5"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/0382a9ed13208f8bfc22ca2f62b364855207dffdb73dc26e150ade78c3093f1cf56172df2dd460c8caf2afa91c0ed4ec8a88c62f8f9cd1cf423d26506aa8797a
   languageName: node
   linkType: hard
 
@@ -6565,9 +6583,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inquirer@npm:8.2.2":
-  version: 8.2.2
-  resolution: "inquirer@npm:8.2.2"
+"inquirer@npm:8.2.6":
+  version: 8.2.6
+  resolution: "inquirer@npm:8.2.6"
   dependencies:
     ansi-escapes: "npm:^4.2.1"
     chalk: "npm:^4.1.1"
@@ -6583,7 +6601,8 @@ __metadata:
     string-width: "npm:^4.1.0"
     strip-ansi: "npm:^6.0.0"
     through: "npm:^2.3.6"
-  checksum: 10c0/fa1cb84941f775c5bb0c6319449077e68aa944d4701d4afcf6d90b4a100ac96c0e9010ec2e8fa4b4245429904404cca649bd3db5b158f63a8d9a50a78f293fa9
+    wrap-ansi: "npm:^6.0.1"
+  checksum: 10c0/eb5724de1778265323f3a68c80acfa899378cb43c24cdcb58661386500e5696b6b0b6c700e046b7aa767fe7b4823c6f04e6ddc268173e3f84116112529016296
   languageName: node
   linkType: hard
 
@@ -8812,19 +8831,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nest-commander@npm:^2.3.0":
-  version: 2.5.0
-  resolution: "nest-commander@npm:2.5.0"
+"nest-commander@npm:^3.17.0":
+  version: 3.17.0
+  resolution: "nest-commander@npm:3.17.0"
   dependencies:
-    "@golevelup/nestjs-discovery": "npm:3.0.0"
-    commander: "npm:8.3.0"
-    cosmiconfig: "npm:7.0.1"
-    inquirer: "npm:8.2.2"
+    "@fig/complete-commander": "npm:^3.0.0"
+    "@golevelup/nestjs-discovery": "npm:4.0.3"
+    commander: "npm:11.1.0"
+    cosmiconfig: "npm:8.3.6"
+    inquirer: "npm:8.2.6"
   peerDependencies:
-    "@nestjs/common": ^8.0.0
-    "@nestjs/core": ^8.0.0
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
     "@types/inquirer": ^8.1.3
-  checksum: 10c0/00d02c9827d325617284cf93625a0fd165e62bb196526f0e3d58bdc9bff9ae8e636acc8e1b5630ba288fc9b9ff77f82da8d3b5214c67897063ffa46ffcaecad8
+  checksum: 10c0/74bd2e3a7cdff8ef72774d78d79c023895ee0387fd7050d7c6fa8e14543554ba9fccdc31c442faab14583d2d7e386727d7a069a4d4b118069d78e2e6ac3c6c4c
   languageName: node
   linkType: hard
 
@@ -9867,6 +9887,15 @@ __metadata:
   bin:
     prettier: bin-prettier.js
   checksum: 10c0/463ea8f9a0946cd5b828d8cf27bd8b567345cf02f56562d5ecde198b91f47a76b7ac9eae0facd247ace70e927143af6135e8cf411986b8cb8478784a4d6d724a
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^3.2.5":
+  version: 3.5.3
+  resolution: "prettier@npm:3.5.3"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 10c0/3880cb90b9dc0635819ab52ff571518c35bd7f15a6e80a2054c05dbc8a3aa6e74f135519e91197de63705bcb38388ded7e7230e2178432a1468005406238b877
   languageName: node
   linkType: hard
 
@@ -12890,6 +12919,17 @@ __metadata:
     string-width: "npm:^4.1.0"
     strip-ansi: "npm:^6.0.0"
   checksum: 10c0/d15fc12c11e4cbc4044a552129ebc75ee3f57aa9c1958373a4db0292d72282f54373b536103987a4a7594db1ef6a4f10acf92978f79b98c49306a4b58c77d4da
+  languageName: node
+  linkType: hard
+
+"wrap-ansi@npm:^6.0.1":
+  version: 6.2.0
+  resolution: "wrap-ansi@npm:6.2.0"
+  dependencies:
+    ansi-styles: "npm:^4.0.0"
+    string-width: "npm:^4.1.0"
+    strip-ansi: "npm:^6.0.0"
+  checksum: 10c0/baad244e6e33335ea24e86e51868fe6823626e3a3c88d9a6674642afff1d34d9a154c917e74af8d845fd25d170c4ea9cf69a47133c3f3656e1252b3d462d9f6c
   languageName: node
   linkType: hard
 
