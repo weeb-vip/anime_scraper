@@ -1,6 +1,9 @@
-FROM node:20.9.0-alpine AS build
+FROM node:20.17.0-alpine AS build
 
 ENV NODE_ENV development
+RUN apk update && apk add bash
+RUN corepack enable
+RUN corepack prepare yarn@4.3.1 --activate
 WORKDIR /usr/src/app
 
 COPY package.json package.json
@@ -9,14 +12,16 @@ COPY src src
 COPY tsconfig.json tsconfig.json
 COPY tsconfig.build.json tsconfig.build.json
 
-RUN apk update && apk add bash
+
 RUN yarn install
 RUN yarn build
 
-FROM node:20.9.0-alpine AS PROD
+FROM node:20.17.0-alpine AS PROD
 ENV NODE_ENV production
 ARG SERVICE_VERSION
 ENV SERVICE_VERSION=$SERVICE_VERSION
+RUN corepack enable
+RUN corepack prepare yarn@4.3.1 --activate
 WORKDIR /usr/src/app
 
 RUN apk add --no-cache tini
