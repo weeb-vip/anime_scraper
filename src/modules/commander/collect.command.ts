@@ -10,12 +10,14 @@ interface BasicCommandOptions {
 }
 
 @Command({ name: 'collect', description: 'A parameter parse' })
-export class CollectCommand implements CommandRunner {
+export class CollectCommand extends CommandRunner {
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
     private readonly scapperService: ScraperService,
-  ) {}
+  ) {
+    super()
+  }
 
   async run(
     passedParam: string[],

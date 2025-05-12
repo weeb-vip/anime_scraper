@@ -8,12 +8,14 @@ import { DeduplicateService } from '../deduplicate/deduplicate.service'
   name: 'deduplicate',
   description: 'Deduplicate the data',
 })
-export class DeduplicateCommand implements CommandRunner {
+export class DeduplicateCommand extends CommandRunner {
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
     private readonly deduplicateService: DeduplicateService,
-  ) {}
+  ) {
+    super()
+  }
 
   async run(passedParam: string[], options?: any): Promise<void> {
     return this.deduplicateService.deduplicate()

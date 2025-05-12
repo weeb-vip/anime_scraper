@@ -15,17 +15,21 @@ interface BasicCommandOptions {
   new?: boolean
 }
 
+
 @Command({
   name: 'scrape',
   description: 'A parameter parse',
+  // @ts-ignore
   subCommands: [NewCommand],
 })
-export class ScraperCommand implements CommandRunner {
+export class ScraperCommand extends CommandRunner {
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
     private readonly scapperService: ScraperService,
-  ) {}
+  ) {
+    super()
+  }
 
   async run(
     passedParam: string[],
