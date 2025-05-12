@@ -430,6 +430,17 @@ export class MyanimelistService {
       parsedStartDate = isValid(parsedData.startDate) ? parsedData.startDate : ParseDate(res['aired'].split('to')[0].trim(), 'yyyy', new Date())
     }
 
+    // it could be that the format of aired is like Oct 2025 to ?, handle that as well
+    if (parsedStartDate == null) {
+      const aired = res['aired'].split('to')[0].trim()
+      const dateParts = aired.split(' ')
+      if (dateParts.length === 2) {
+        const month = dateParts[0]
+        const year = dateParts[1]
+        parsedStartDate = ParseDate(`${month} 1, ${year}`, 'MMM d, yyyy', new Date())
+      }
+    }
+
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
       startDate: parsedStartDate,
