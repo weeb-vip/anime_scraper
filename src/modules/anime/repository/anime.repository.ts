@@ -119,10 +119,11 @@ export class AnimeRepository extends Repository<Anime> {
     // eslint-disable-next-line
     let cleanBody: Anime = _.omit(body, nullFields) as Anime
     // eslint-disable-next-line
-    let savedLink: Anime = await this.findOne({
+    // if cleanBody.title_en and cleanBody.title_jp, include both, otherwise include only one
+    let savedLink: Anime = await this.findOne((cleanBody.title_en && cleanBody.title_jp) ? {
       title_en: cleanBody.title_en,
       title_jp: cleanBody.title_jp,
-    })
+    } : (cleanBody.title_en) ? { title_en: cleanBody.title_en } : { title_jp: cleanBody.title_jp })
     if (savedLink) {
       await this.update({ id: savedLink.id }, cleanBody)
       const link = { ...savedLink, ...cleanBody }
