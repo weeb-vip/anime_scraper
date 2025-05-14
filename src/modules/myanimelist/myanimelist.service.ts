@@ -318,7 +318,7 @@ export class MyanimelistService {
 
     // get query params from anidb link
     const anidbquery = anidbLink
-      .split('?')[1]
+      ?.split('?')[1]
       .split('&')
       .reduce((acc, item) => {
         return {
@@ -425,7 +425,7 @@ export class MyanimelistService {
     console.log(image)
     let parsedStartDate: Date | null = null
 
-    if (res['aired']?.toLowerCase() === "not available") {
+    if (res['aired']?.toLowerCase() === "not available" || res['aired'] == undefined) {
       parsedStartDate = null
     } else {
       const airedFirstPart = res['aired'].split('to')[0].trim()
