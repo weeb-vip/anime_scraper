@@ -425,7 +425,7 @@ export class MyanimelistService {
     console.log(image)
     let parsedStartDate: Date | null = null
 
-    if (res['aired'].toLowerCase() === "not available") {
+    if (res['aired']?.toLowerCase() === "not available") {
       parsedStartDate = null
     } else {
       const airedFirstPart = res['aired'].split('to')[0].trim()
