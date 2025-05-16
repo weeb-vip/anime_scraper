@@ -193,10 +193,10 @@ export class MyanimelistService {
 
   // generate anime urls, default for new is false
   async generateAnimeURLs(
-    { new: isNew = false }: { new: boolean } = { new: false },
+    { new: isNew = false, days: days = 1 }: { new: boolean, days?: number } = { new: false },
   ): Promise<string[]> {
     if (isNew) {
-      return (await this.myanimelistlinkRepo.getAllNewAnime()).map(
+      return (await this.myanimelistlinkRepo.getAllNewAnime(days)).map(
         (IMyanimelist) => IMyanimelist.link,
       )
     }

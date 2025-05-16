@@ -95,6 +95,7 @@ export class ScraperService {
     urls?: string[],
     excludedUrls?: string[],
     newlyAdded?: boolean,
+    days?: number
   ) {
     await this.puppeteerService.setup(limit, headless)
 
@@ -121,6 +122,7 @@ export class ScraperService {
     } else {
       processUrls = await this.myanimelistService.generateAnimeURLs({
         new: newlyAdded,
+        days: days,
       })
     }
     if (excludedUrls) {

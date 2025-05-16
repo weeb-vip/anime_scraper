@@ -95,12 +95,12 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
     }))
   }
 
-  async getAllNewAnime(): Promise<IMyanimelist[]> {
+  async getAllNewAnime(days: number): Promise<IMyanimelist[]> {
     // current date
     const today = new Date()
     // today minus 1 day
     const yesterday = new Date(
-      new Date(today).setDate(today.getDate() - 1),
+      new Date(today).setDate(today.getDate() - days),
     ).toISOString()
 
     const links: MyanimelistLinks[] = await this.find({

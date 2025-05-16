@@ -13,6 +13,7 @@ interface BasicCommandOptions {
   file?: string
   excludeFile?: string
   new?: boolean
+  days?: number
 }
 
 
@@ -64,6 +65,9 @@ export class ScraperCommand extends CommandRunner {
           ? excludedUrls
           : null,
         options.new !== undefined && options.new !== null ? options.new : false,
+        options?.days !== undefined && options?.days !== null
+          ? options.days
+          : null,
       )
     }
   }
@@ -118,6 +122,15 @@ export class ScraperCommand extends CommandRunner {
     return true
   }
 
+  @Option({
+    flags: '-d, --days [days]',
+    description: 'Days to scrape',
+  })
+  getDays(val: string): number {
+    this.logger.info(`Pased val: ${val}`)
+    return parseInt(val, 10)
+  }
+
   scrapeSite(
     param: string[],
     option: string,
@@ -126,6 +139,7 @@ export class ScraperCommand extends CommandRunner {
     urls?: string[],
     excludedUrls?: string[],
     newlyadded?: boolean,
+    days?: number,
   ): void {
     this.logger.info(`scape site: ${option}`)
     switch (option) {
@@ -141,6 +155,7 @@ export class ScraperCommand extends CommandRunner {
           urls,
           excludedUrls,
           newlyadded,
+          days
         )
         break
 
