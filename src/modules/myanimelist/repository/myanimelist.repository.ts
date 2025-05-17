@@ -54,6 +54,12 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
       name: cleanBody.name,
       type: cleanBody.type,
     })
+    if (!savedLink) {
+      savedLink = await this.findOne({
+        where: { link: cleanBody.link },
+      })
+    }
+
     if (savedLink) {
       await this.update({ id: savedLink.id }, cleanBody)
       const link = { ...savedLink, ...cleanBody }
