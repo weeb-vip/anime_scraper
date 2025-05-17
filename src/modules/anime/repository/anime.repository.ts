@@ -124,6 +124,10 @@ export class AnimeRepository extends Repository<Anime> {
       title_en: cleanBody.title_en,
       title_jp: cleanBody.title_jp,
     } : (cleanBody.title_en) ? { title_en: cleanBody.title_en } : { title_jp: cleanBody.title_jp })
+
+    if (body.id) {
+      savedLink = await this.findOne({ where: { id: body.id } })
+    }
     if (savedLink) {
       await this.update({ id: savedLink.id }, cleanBody)
       const link = { ...savedLink, ...cleanBody }

@@ -3,6 +3,7 @@ export interface IMyanimelist {
   readonly type: RECORD_TYPE
   readonly name: string
   readonly link: string
+  readonly animeId: string
   readonly updatedAt: Date
 }
 

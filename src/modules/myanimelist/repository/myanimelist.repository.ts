@@ -16,6 +16,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
           name: item.name,
           type: item.type,
           link: item.link,
+          animeId: item.animeId,
           updatedAt: item.updatedAt,
         }
       : null
@@ -30,6 +31,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
           name: item.name,
           type: item.type,
           link: item.link,
+          animeId: item.animeId,
           updatedAt: item.updatedAt,
         }
       : null
@@ -60,6 +62,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
         name: link.name,
         type: link.type,
         link: link.link,
+        animeId: link.animeId,
         updatedAt: link.updatedAt,
       }
     }
@@ -76,6 +79,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
       name: saved.name,
       type: saved.type,
       link: saved.link,
+      animeId: saved.animeId,
       updatedAt: saved.updatedAt,
     }
   }
@@ -91,6 +95,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
       name: link.name,
       type: link.type,
       link: link.link,
+      animeId: link.animeId,
       updatedAt: link.updatedAt,
     }))
   }
@@ -115,6 +120,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
       name: link.name,
       type: link.type,
       link: link.link,
+      animeId: link.animeId,
       updatedAt: link.updatedAt,
     }))
   }

@@ -451,11 +451,18 @@ export class MyanimelistService {
       }
     }
 
+    // check if there is an anime already linked to the url
+    const existingAnime = await this.myanimelistlinkRepo.findOne({
+      where: {
+        link: url,
+      },
+    })
 
 
     const upsertedAnime = await this.animeService.upsertAnime({
       ...parsedData,
       startDate: parsedStartDate,
+      ...(existingAnime?.animeId ? { id: existingAnime?.animeId } : {}),
     })
     try {
       await this.scrapeEpisode({
@@ -471,6 +478,12 @@ export class MyanimelistService {
         e,
       )
     }
+    await this.myanimelistlinkRepo.upsert({
+      name: parsedData.title_en,
+      link: url,
+      type: RECORD_TYPE.Anime,
+      animeId: upsertedAnime.id,
+    })
     this.scrapeRecordService.recordSuccessfulScrape(data)
   }
 

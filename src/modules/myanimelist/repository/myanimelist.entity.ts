@@ -21,6 +21,9 @@ export class MyanimelistLinks {
   @Column({ name: 'link' })
   link: string
 
+  @Column({ name: 'anime_id', nullable: true, type: 'varchar', length: 36 })
+  animeId: string
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 
