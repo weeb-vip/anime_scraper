@@ -13,7 +13,7 @@ export class AnimeCharacterRepository extends Repository<AnimeCharacterEntity> {
     anime_id: number,
   ): Promise<AnimeCharacterEntity[]> {
     return await this.find({
-      where: { anime_id },
+      where: { animeID: anime_id },
     })
   }
 
@@ -22,12 +22,12 @@ export class AnimeCharacterRepository extends Repository<AnimeCharacterEntity> {
     name: string,
   ): Promise<AnimeCharacterEntity> {
     return await this.findOne({
-      where: { anime_id, name },
+      where: { animeID: anime_id, name },
     })
   }
 
   public async upsert(
-    data: AnimeCharacterEntity,
+    data: Partial<AnimeCharacterEntity>,
   ): Promise<AnimeCharacterEntity> {
     const foundAnimeCharacter = await this.findOneByAnimeIdAndName(
       data.animeID,

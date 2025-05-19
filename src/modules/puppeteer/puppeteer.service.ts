@@ -32,4 +32,5 @@ export class PuppeteerService {
   getStaticClusterManager(): typeof ClusterManager {
     return ClusterManager
   }
+
 }

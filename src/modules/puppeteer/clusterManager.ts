@@ -185,6 +185,7 @@ class ClusterManager {
       'An issue occurred during element search. Has a page been instantiated?',
     )
   }
+
 }
 
 export default ClusterManager

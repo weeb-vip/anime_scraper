@@ -1,4 +1,4 @@
-import { Column, Entity, Generated, PrimaryColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Generated, PrimaryColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity({ name: 'anime_character' })
 export class AnimeCharacterEntity {
@@ -11,6 +11,9 @@ export class AnimeCharacterEntity {
 
   @Column({ name: 'name', nullable: false })
   name: string
+
+  @Column({ name: 'image', nullable: true })
+  image: string
 
   @Column({ name: 'role', nullable: false })
   role: string
@@ -41,4 +44,10 @@ export class AnimeCharacterEntity {
 
   @Column({ name: 'summary', nullable: true })
   summary: string
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date
 }

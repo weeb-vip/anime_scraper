@@ -5,6 +5,10 @@ import { AnimeEpisodesRepository } from './repository/animeEpisodes.repository'
 import { AnimeCharacterRepository } from './repository/animeCharacters.repository'
 import { AnimeEpisodesEntity } from './repository/animeEpisodes.entity'
 import { AnimeCharacterEntity } from './repository/animeCharacters.entity'
+import { AnimeStaffRepository } from './repository/animeStaff.repository'
+import { AnimeStaffEntity } from './repository/animeStaff.entity'
+import { AnimeCharacterStaffLinkRepository } from './repository/animeCharacterStaffLink.repository'
+import { AnimeCharacterStaffLinkEntity } from './repository/animeCharacterStaffLink.entity'
 
 @Injectable()
 export class AnimeService {
@@ -12,6 +16,8 @@ export class AnimeService {
     private readonly animeRepository: AnimeRepository,
     private readonly animeEpisodesRepository: AnimeEpisodesRepository,
     private readonly animeCharacterRepository: AnimeCharacterRepository,
+    private readonly animeStaffRepository: AnimeStaffRepository,
+    private readonly animeCharacterStaffLinkRepository: AnimeCharacterStaffLinkRepository,
   ) {}
 
   upsertAnime(anime: Partial<IAnime>) {
@@ -31,6 +37,29 @@ export class AnimeService {
       animeID: animeID,
     })
   }
+
+  upsertAnimeStaff(characterId: string, staff: AnimeStaffEntity) {
+    return this.animeStaffRepository.upsert({
+      ...staff
+    })
+  }
+
+  linkCharacterToStaff(
+    characterId: string,
+    staffId: string,
+    characterName: string,
+    staffGivenName: string,
+    staffFamilyName: string,
+  ) {
+    return this.animeCharacterStaffLinkRepository.upsert({
+      characterID: characterId,
+      staffID: staffId,
+      characterName,
+      staffGivenName,
+      staffFamilyName,
+    } as AnimeCharacterStaffLinkEntity)
+  }
+
 
   getDuplicates() {
     return this.animeRepository.getDuplicates()
