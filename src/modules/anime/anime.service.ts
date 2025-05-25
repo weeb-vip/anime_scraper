@@ -38,7 +38,7 @@ export class AnimeService {
     })
   }
 
-  upsertAnimeStaff(characterId: string, staff: AnimeStaffEntity) {
+  upsertAnimeStaff(staff: AnimeStaffEntity) {
     return this.animeStaffRepository.upsert({
       ...staff
     })

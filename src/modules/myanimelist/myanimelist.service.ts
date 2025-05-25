@@ -538,22 +538,6 @@ export class MyanimelistService {
           page, table, 'td:nth-child(1) img', 'data-src'
         );
 
-        const voiceActorName = await ClusterManager.findOneGivenElement(
-          page, table, '.js-anime-character-va-lang .spaceit_pad a', 'textContent'
-        );
-
-        const voiceActorLink = await ClusterManager.findOneGivenElement(
-          page, table, '.js-anime-character-va-lang .spaceit_pad a', 'href'
-        );
-
-        const voiceActorImage = await ClusterManager.findOneGivenElement(
-          page, table, '.js-anime-character-va-lang td img', 'data-src'
-        );
-
-        const [familyName, givenName] = (voiceActorName || 'Unknown Unknown')
-          .split(',')
-          .map((part) => part.trim());
-
         const characterLink = await ClusterManager.findOneGivenElement(
           page, table, '.spaceit_pad:nth-of-type(3) a', 'href'
         );
@@ -562,32 +546,46 @@ export class MyanimelistService {
           characterLinks.push({ url: characterLink, name: characterName });
         }
 
-        if (voiceActorLink) {
-          staffLinks.push({ url: voiceActorLink, givenName, familyName });
-        }
-
-
-        console.log(image, voiceActorImage)
         const character = new AnimeCharacterEntity();
         character.animeID = animeId;
         character.name = characterName?.trim() || 'Unknown';
         character.image = image || null;
         character.role = role?.trim() || 'Unknown';
 
-        const staff = new AnimeStaffEntity();
-        staff.given_name = givenName || '';
-        staff.family_name = familyName || '';
-        staff.image = voiceActorImage || null;
-
-        // Save character and staff
         const upsertedCharacter = await this.animeService.upsertAnimeCharacter(animeId, character);
         this.logger.debug(`Upserted character: ${upsertedCharacter.name} with ID: ${upsertedCharacter.id}`);
-        const upsertedStaff = await this.animeService.upsertAnimeStaff(upsertedCharacter.id, staff);
 
-        // Link them
-        await this.animeService.linkCharacterToStaff(upsertedCharacter.id, upsertedStaff.id, characterName, givenName, familyName);
+        const voiceActorRows = await table.$$('.js-anime-character-va-lang');
 
+        for (const row of voiceActorRows) {
+          const voiceActorName = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'textContent');
+          const voiceActorLink = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'href');
+          const voiceActorImage = await ClusterManager.findOneGivenElement(page, row, 'img', 'data-src');
 
+          const [familyName, givenName] = (voiceActorName || 'Unknown Unknown')
+            .split(',')
+            .map((part) => part.trim());
+
+          if (voiceActorLink) {
+            staffLinks.push({ url: voiceActorLink, givenName, familyName });
+          }
+
+          const staff = new AnimeStaffEntity();
+          staff.given_name = givenName || '';
+          staff.family_name = familyName || '';
+          staff.image = voiceActorImage || null;
+
+          const upsertedStaff = await this.animeService.upsertAnimeStaff(staff);
+          this.logger.debug(`Upserted voice actor: ${upsertedStaff.given_name} ${upsertedStaff.family_name}`);
+
+          await this.animeService.linkCharacterToStaff(
+            upsertedCharacter.id,
+            upsertedStaff.id,
+            character.name,
+            givenName,
+            familyName
+          );
+        }
 
       } catch (err) {
         this.logger.warn('Error scraping character/staff block', err);
@@ -602,14 +600,7 @@ export class MyanimelistService {
       }, async ({ page, data }) => {
         await this.scrapeCharacterDetails({ page, data });
       });
-
-      // try {
-      //   await this.scrapeCharacterDetails({ page, data: { url: characterLink.url, animeId, characterName: characterLink.name } });
-      // } catch (err) {
-      //   this.logger.warn('Error scraping character details', err);
-      // }
     }
-
 
     for (const staffLink of staffLinks) {
       await this.puppeteerService.clusterManager.queue({
@@ -619,15 +610,9 @@ export class MyanimelistService {
       }, async ({ page, data }) => {
         await this.scrapeVoiceActorDetails({ page, data });
       });
-
-      // try {
-      //   await this.scrapeVoiceActorDetails({ page, data: { url: staffLink.url, givenName: staffLink.givenName, familyName: staffLink.familyName } });
-      // } catch (err) {
-      //   this.logger.warn('Error scraping voice actor details', err);
-      // }
     }
-
   }
+
 
   public async scrapeCharacterDetails({ page, data }: any) {
     const url: string = data.url;
@@ -765,7 +750,7 @@ export class MyanimelistService {
     staff.hobbies = hobbies || null;
     staff.summary = summary || null;
 
-    const upserted = await this.animeService.upsertAnimeStaff(null, staff);
+    const upserted = await this.animeService.upsertAnimeStaff( staff);
     this.logger.debug(`Upserted voice actor: ${upserted.given_name} ${upserted.family_name}`);
   }
 
