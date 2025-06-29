@@ -30,6 +30,9 @@ export class AnimeStaffEntity {
   @Column({ name: 'summary', nullable: true })
   summary: string
 
+  @Column({ name: 'language', nullable: true })
+  language: string
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 

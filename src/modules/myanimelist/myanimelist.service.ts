@@ -91,6 +91,10 @@ export class MyanimelistService {
     )
     console.log(links)
 
+    // remove query params from link.url
+    links.forEach((link) => {
+      link.url = link.url.split('?')[0]
+    })
     await Promise.all(
       links.map((link) => {
         return this.myanimelistlinkRepo.upsert({
@@ -155,6 +159,11 @@ export class MyanimelistService {
         url: await page.evaluate((el: any) => el.href, element),
       })),
     )
+
+    // remove query params from link
+    links.forEach((link) => {
+      link.url = link.url.split('?')[0]
+    })
 
     await Promise.all(
       links.map((link) => {
@@ -467,9 +476,11 @@ export class MyanimelistService {
       ...(existingAnime?.animeId ? { id: existingAnime?.animeId } : {}),
     })
 
+    // remove query param from link
+    const sanitizedURL = url.split('?')[0]
     await this.myanimelistlinkRepo.upsert({
       name: parsedData.title_en,
-      link: url,
+      link: sanitizedURL,
       type: RECORD_TYPE.Anime,
       animeId: upsertedAnime.id,
     })
