@@ -570,6 +570,7 @@ export class MyanimelistService {
 
         for (const row of voiceActorRows) {
           const voiceActorName = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'textContent');
+          const voiceActorLanguage = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad:nth-of-type(2)', 'textContent')
           const voiceActorLink = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'href');
           const voiceActorImage = await ClusterManager.findOneGivenElement(page, row, 'img', 'data-src');
 
@@ -581,10 +582,13 @@ export class MyanimelistService {
             staffLinks.push({ url: voiceActorLink, givenName, familyName });
           }
 
+          const languageTrimmed = voiceActorLanguage?.trim() || null
+
           const staff = new AnimeStaffEntity();
           staff.given_name = givenName || '';
           staff.family_name = familyName || '';
           staff.image = voiceActorImage || null;
+          staff.language = languageTrimmed || null
 
           const upsertedStaff = await this.animeService.upsertAnimeStaff(staff);
           this.logger.debug(`Upserted voice actor: ${upsertedStaff.given_name} ${upsertedStaff.family_name}`);
