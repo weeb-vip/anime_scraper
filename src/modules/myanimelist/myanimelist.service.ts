@@ -244,6 +244,26 @@ export class MyanimelistService {
     }
   }
 
+  private async gotoWithTimeout(page: any, url: string, timeoutMs: number = 15000): Promise<boolean> {
+    try {
+      await Promise.race([
+        page.goto(url),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Page load timeout')), timeoutMs)
+        )
+      ]);
+      this.logger.debug(`Page loaded successfully: ${url}`);
+      return true;
+    } catch (error) {
+      if (error.message === 'Page load timeout') {
+        this.logger.warn(`Page load timed out after ${timeoutMs}ms, continuing with partial data: ${url}`);
+      } else {
+        this.logger.warn(`Page load failed, continuing with partial data: ${url}`, error.message);
+      }
+      return false;
+    }
+  }
+
   async scrapeAnimePage({ page, data }: any) {
     this.logger.debug(`Collecting anime on page ${data}`)
     const url: string = data
@@ -261,7 +281,10 @@ export class MyanimelistService {
       // }
     })
     await page.setDefaultNavigationTimeout(5 * 60 * 1000);
-    await page.goto(url)
+    const pageLoaded = await this.gotoWithTimeout(page, url);
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for anime: ${url}`);
+    }
     await this.handleCaptchas(page)
     const elements: ElementHandle[] = await ClusterManager.findMany(
       page,
@@ -501,16 +524,16 @@ export class MyanimelistService {
     }
 
     try {
-      await this.scrapeEpisode({
-        page,
-        data: {
-          url,
-          id: upsertedAnime.id,
-        },
-      })
+      await this.puppeteerService.clusterManager.queue({
+        url,
+        id: upsertedAnime.id,
+      }, async ({ page, data }) => {
+        await this.scrapeEpisode({ page, data });
+      });
+      this.logger.info(`Queued episode scraping for ${upsertedAnime.title_en}`);
     } catch (e) {
       this.logger.error(
-        `Error scraping episodes for ${upsertedAnime.title_en}`,
+        `Error queuing episodes for ${upsertedAnime.title_en}`,
         e,
       )
     }
@@ -524,7 +547,10 @@ export class MyanimelistService {
     const animeId: string = data.id.toString();
 
     await page.setDefaultNavigationTimeout(5 * 60 * 1000);
-    await page.goto(`${url}/characters`);
+    const pageLoaded = await this.gotoWithTimeout(page, `${url}/characters`);
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for characters: ${url}/characters`);
+    }
     await this.handleCaptchas(page);
 
     const tables: ElementHandle[] = await ClusterManager.findMany(
@@ -635,7 +661,10 @@ export class MyanimelistService {
     const characterName: string = data.characterName;
 
     await page.setDefaultNavigationTimeout(5 * 60 * 1000);
-    await page.goto(url);
+    const pageLoaded = await this.gotoWithTimeout(page, url);
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for character: ${url}`);
+    }
     await this.handleCaptchas(page);
 
     // Extract English and Japanese names
@@ -682,7 +711,10 @@ export class MyanimelistService {
     const familyName = data.familyName;
 
     await page.setDefaultNavigationTimeout(5 * 60 * 1000);
-    await page.goto(url);
+    const pageLoaded = await this.gotoWithTimeout(page, url);
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for voice actor: ${url}`);
+    }
     await this.handleCaptchas(page);
 
     const jpGivenName = await ClusterManager.pageFindOne(
@@ -785,7 +817,10 @@ export class MyanimelistService {
           }
         })*/
     await page.setDefaultNavigationTimeout(60 * 2000)
-    await page.goto(`${url}/episode`)
+    const pageLoaded = await this.gotoWithTimeout(page, `${url}/episode`);
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for episodes: ${url}/episode`);
+    }
     await this.handleCaptchas(page)
 
     // // get all links
