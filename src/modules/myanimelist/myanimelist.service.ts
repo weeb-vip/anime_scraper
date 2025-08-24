@@ -189,16 +189,17 @@ export class MyanimelistService {
     const basePath = '/anime.php'
     const params = {
       o: '9',
-      'c%5B0%5D': 'a',
-      '&c%5B1%5Dd': 'd',
+      'c[0]': 'a',
+      'c[1]': 'd',
       cv: '2',
-      w: '1'
+      w: '1',
+      show: 0
     }
 
-    const urls = new Array(20).fill(0).map((_, i) => {
+    const urls = [`${this.baseURL}${basePath}?${QueryString.stringify(params)}`, ...(new Array(20).fill(0).map((_, i) => {
       params['show'] += 50
       return `${this.baseURL}${basePath}?${QueryString.stringify(params)}`
-    })
+    }))]
     return urls
   }
 
