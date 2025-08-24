@@ -189,10 +189,10 @@ export class MyanimelistService {
     const basePath = '/anime.php'
     const params = {
       o: '9',
-      'c%5B0%5D': '&c%5B1%5D=d',
+      'c%5B0%5D': 'a',
+      '&c%5B1%5Dd': 'd',
       cv: '2',
-      w: '1',
-      show: 0,
+      w: '1'
     }
 
     const urls = new Array(20).fill(0).map((_, i) => {
@@ -248,7 +248,7 @@ export class MyanimelistService {
     try {
       await Promise.race([
         page.goto(url),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Page load timeout')), timeoutMs)
         )
       ]);
