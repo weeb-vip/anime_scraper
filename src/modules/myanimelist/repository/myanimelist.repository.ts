@@ -2,6 +2,7 @@ import { Between, EntityRepository, LessThanOrEqual, Repository } from 'typeorm'
 import * as _ from 'lodash'
 import { IMyanimelist, RECORD_TYPE } from './interface'
 import { MyanimelistLinks } from './myanimelist.entity'
+import {da} from "date-fns/locale";
 
 @EntityRepository(MyanimelistLinks)
 export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
@@ -106,13 +107,16 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
     }))
   }
 
-  async getAllNewAnime(days: number): Promise<IMyanimelist[]> {
+  async getAllNewAnime(days: number = 1): Promise<IMyanimelist[]> {
     // current date
     const today = new Date()
+    if (days < 1) days = 1
+
     // today minus 1 day
     const yesterday = new Date(
       new Date(today).setDate(today.getDate() - days),
     ).toISOString()
+console.log(yesterday, today.toISOString())
 
     const links: MyanimelistLinks[] = await this.find({
       where: {
@@ -121,6 +125,7 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
         createdAt: Between(yesterday, today.toISOString()),
       },
     })
+    console.log(links)
     return links.map((link: MyanimelistLinks) => ({
       id: link.id,
       name: link.name,
