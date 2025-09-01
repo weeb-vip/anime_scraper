@@ -7,6 +7,8 @@ import { AnimeEpisodesRepository } from './repository/animeEpisodes.repository'
 import { AnimeStaffRepository } from './repository/animeStaff.repository'
 import { AnimeCharacterStaffLinkEntity } from './repository/animeCharacterStaffLink.entity'
 import { AnimeCharacterStaffLinkRepository } from './repository/animeCharacterStaffLink.repository'
+import { AnimeSeasonRepository } from './repository/anime-season.repository'
+import { MyanimelistlinkRepository } from '../myanimelist/repository/myanimelist.repository'
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { AnimeCharacterStaffLinkRepository } from './repository/animeCharacterSt
       AnimeCharacterRepository,
       AnimeStaffRepository,
       AnimeCharacterStaffLinkRepository,
+      AnimeSeasonRepository,
+      MyanimelistlinkRepository,
     ]),
   ],
   providers: [AnimeService],

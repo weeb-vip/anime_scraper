@@ -14,6 +14,7 @@ import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 import { RECORD_TYPE } from './repository/interface'
 import { AnimeStaffEntity } from '../anime/repository/animeStaff.entity'
 import { AnimeCharacterEntity } from '../anime/repository/animeCharacters.entity'
+import { SeasonYear, parseSeasonYear, Season } from '../common/season.types'
 
 @Injectable()
 export class MyanimelistService {
@@ -217,6 +218,57 @@ export class MyanimelistService {
     )
   }
 
+  generateSeasonalURL(seasonYear: SeasonYear): string {
+    const { season, year } = parseSeasonYear(seasonYear)
+    return `${this.baseURL}/anime/season/${year}/${season}`
+  }
+
+  async collectSeasonalAnime({ page, data }: any) {
+    this.logger.debug(`Collecting seasonal anime on page ${data.url}`)
+    const url: string = data.url
+    const seasonYear: SeasonYear = data.seasonYear
+
+    await page.goto(url)
+    await this.handleCaptchas(page)
+    this.logger.debug(`Page ${url} loaded`)
+
+    // Use the more direct selector for seasonal anime links
+    const links: readonly { name: string; url: string }[] = await page.evaluate(() => {
+      return [...document.querySelectorAll('.seasonal-anime-list.js-seasonal-anime-list.js-seasonal-anime-list-key-1 .link-title')].map(a => ({
+        name: a.textContent?.trim() || 'Unknown',
+        url: (a as HTMLAnchorElement).href
+      }));
+    })
+
+    // remove query params from link.url
+    links.forEach((link) => {
+      link.url = link.url.split('?')[0]
+    })
+
+    // Save links to database
+    await Promise.all(
+      links.map((link) => {
+        return this.myanimelistlinkRepo.upsert({
+          name: link.name,
+          link: link.url,
+          type: RECORD_TYPE.Anime,
+        })
+      }),
+    )
+
+    this.logger.info(`Collected ${links.length} seasonal anime for ${seasonYear}`)
+
+    // Queue ALL anime pages for scraping (limit controls concurrency, not quantity)
+    this.logger.info(`Queuing ${links.length} anime pages for scraping`)
+    
+    for (const link of links) {
+      await this.puppeteerService.getManager().queue({
+        url: link.url,
+        seasonYear: seasonYear,
+      })
+    }
+  }
+
   private async handleCaptchas(page: any) {
     const searchText =
       'We are temporarily restricting site connections due to heavy access.\n' +
@@ -266,8 +318,9 @@ export class MyanimelistService {
   }
 
   async scrapeAnimePage({ page, data }: any) {
-    this.logger.debug(`Collecting anime on page ${data}`)
-    const url: string = data
+    this.logger.debug(`Collecting anime on page ${data.url || data}`)
+    const url: string = data.url || data
+    const seasonYear: SeasonYear | null = data.seasonYear || null
     await page.setRequestInterception(true)
     page.on('request', (request: any): void => {
       // if request ends in js, abort
@@ -486,40 +539,47 @@ export class MyanimelistService {
       }
     }
 
-    // check if there is an anime already linked to the url
-    const existingAnime = await this.myanimelistlinkRepo.findOne({
-      where: {
-        link: url,
-      },
-    })
-
-
-    const upsertedAnime = await this.animeService.upsertAnime({
-      ...parsedData,
-      startDate: parsedStartDate,
-      ...(existingAnime?.animeId ? { id: existingAnime?.animeId } : {}),
-    })
-
     // remove query param from link
     const sanitizedURL = url.split('?')[0]
-    await this.myanimelistlinkRepo.upsert({
-      name: parsedData.title_en,
-      link: sanitizedURL,
-      type: RECORD_TYPE.Anime,
-      animeId: upsertedAnime.id,
-    })
 
+    // Use the new method that enforces MyAnimeList link requirement
+    const upsertedAnime = await this.animeService.upsertAnimeWithMyAnimeListLink(
+      {
+        ...parsedData,
+        startDate: parsedStartDate,
+      },
+      sanitizedURL,
+      parsedData.title_en || parsedData.title_jp || 'Unknown',
+    )
+
+    // Add season tracking if seasonYear is provided
+    if (seasonYear && upsertedAnime.id) {
+      try {
+        await this.animeService.addAnimeSeason(
+          upsertedAnime.id,
+          seasonYear,
+          // You can add logic here to determine status based on MyAnimeList data
+          // For now, we'll default to UNKNOWN and let users classify later
+        )
+        this.logger.debug(`Added season ${seasonYear} for anime: ${upsertedAnime.title_en}`)
+      } catch (e) {
+        this.logger.error(
+          `Error adding season ${seasonYear} for ${upsertedAnime.title_en}: ${e.message}`,
+        )
+      }
+    }
+
+    // Queue character and staff scraping as a separate task
     try {
-      await this.scrapeCharactersAndStaff({
-        page,
-        data: {
-          url,
-          id: upsertedAnime.id,
-        },
+      await this.puppeteerService.getManager().queue({
+        url,
+        id: upsertedAnime.id,
+        type: 'characters_staff',
       })
+      this.logger.debug(`Queued character/staff scraping for ${upsertedAnime.title_en}`)
     } catch (e) {
       this.logger.error(
-        `Error scraping characters and staff for ${upsertedAnime.title_en}`,
+        `Error queuing characters and staff scraping for ${upsertedAnime.title_en}`,
         e,
       )
     }
@@ -544,41 +604,122 @@ export class MyanimelistService {
 
 
   public async scrapeCharactersAndStaff({ page, data }: any) {
-    const url: string = data.url;
-    const animeId: string = data.id.toString();
-
-    await page.setDefaultNavigationTimeout(5 * 60 * 1000);
-    const pageLoaded = await this.gotoWithTimeout(page, `${url}/characters`);
-    if (!pageLoaded) {
-      this.logger.warn(`Continuing with partial page load for characters: ${url}/characters`);
+    // When called from queue, data is the entire queued object
+    // When called directly, data has url and id properties
+    const url: string = typeof data === 'string' ? data : (data.url || '');
+    const animeId: string = data.id ? data.id.toString() : '';
+    
+    if (!url || !animeId) {
+      this.logger.warn(`Missing url or id for character/staff scraping. Data: ${JSON.stringify(data)}`);
+      return;
     }
-    await this.handleCaptchas(page);
 
-    const tables: ElementHandle[] = await ClusterManager.findMany(
-      page,
-      '.anime-character-container.js-anime-character-container table.js-anime-character-table'
-    );
+    try {
+      // Check if page is still accessible
+      if (page.isClosed()) {
+        this.logger.warn(`Page is closed, skipping character/staff scraping for ${url}`);
+        return;
+      }
+
+      await page.setDefaultNavigationTimeout(5 * 60 * 1000);
+      const pageLoaded = await this.gotoWithTimeout(page, `${url}/characters`);
+      if (!pageLoaded) {
+        this.logger.warn(`Continuing with partial page load for characters: ${url}/characters`);
+      }
+      await this.handleCaptchas(page);
+    } catch (sessionError) {
+      this.logger.warn(`Session error accessing ${url}/characters: ${sessionError.message}`);
+      return;
+    }
+
+    // Extract all data from the page in a single evaluation to avoid session errors
+    let pageData: Array<{
+      characterName: string | null;
+      role: string | null;
+      image: string | null;
+      characterLink: string | null;
+      voiceActors: Array<{
+        name: string | null;
+        language: string | null;
+        link: string | null;
+        image: string | null;
+      }>;
+    }>;
+    try {
+      pageData = await page.evaluate(() => {
+        const tables = document.querySelectorAll('.anime-character-container.js-anime-character-container table.js-anime-character-table');
+        const extractedData: Array<{
+          characterName: string | null;
+          role: string | null;
+          image: string | null;
+          characterLink: string | null;
+          voiceActors: Array<{
+            name: string | null;
+            language: string | null;
+            link: string | null;
+            image: string | null;
+          }>;
+        }> = [];
+
+        for (const table of tables) {
+          const characterNameEl = table.querySelector('h3.h3_character_name');
+          const roleEl = table.querySelector('.spaceit_pad:nth-of-type(4)');
+          const imageEl = table.querySelector('td:nth-child(1) img') as HTMLImageElement | null;
+          const characterLinkEl = table.querySelector('.spaceit_pad:nth-of-type(3) a') as HTMLAnchorElement | null;
+
+          const voiceActorRows = table.querySelectorAll('.js-anime-character-va-lang');
+          const voiceActors: Array<{
+            name: string | null;
+            language: string | null;
+            link: string | null;
+            image: string | null;
+          }> = [];
+
+          for (const row of voiceActorRows) {
+            const nameEl = row.querySelector('.spaceit_pad a');
+            const languageEl = row.querySelector('.spaceit_pad:nth-of-type(2)');
+            const linkEl = row.querySelector('.spaceit_pad a') as HTMLAnchorElement | null;
+            const imageEl = row.querySelector('img') as HTMLImageElement | null;
+
+            voiceActors.push({
+              name: nameEl?.textContent?.trim() || null,
+              language: languageEl?.textContent?.trim() || null,
+              link: linkEl?.href || null,
+              image: imageEl?.getAttribute('data-src') || null
+            });
+          }
+
+          extractedData.push({
+            characterName: characterNameEl?.textContent?.trim() || null,
+            role: roleEl?.textContent?.trim() || null,
+            image: imageEl?.getAttribute('data-src') || null,
+            characterLink: characterLinkEl?.href || null,
+            voiceActors
+          });
+        }
+
+        return extractedData;
+      });
+    } catch (evalError) {
+      this.logger.warn(`Failed to extract character/staff data from ${url}: ${evalError.message}`);
+      return;
+    }
+
+    if (!pageData || pageData.length === 0) {
+      this.logger.debug(`No character/staff data found for ${url}`);
+      return;
+    }
 
     let characterLinks: { url: string, name: string }[] = [];
     let staffLinks: { url: string, givenName: string, familyName: string }[] = [];
 
-    for (const table of tables) {
+    // Process the extracted data
+    for (const tableData of pageData) {
       try {
-        const characterName = await ClusterManager.findOneGivenElement(
-          page, table, 'h3.h3_character_name', 'textContent'
-        );
-
-        const role = await ClusterManager.findOneGivenElement(
-          page, table, '.spaceit_pad:nth-of-type(4)', 'textContent'
-        );
-
-        const image = await ClusterManager.findOneGivenElement(
-          page, table, 'td:nth-child(1) img', 'data-src'
-        );
-
-        const characterLink = await ClusterManager.findOneGivenElement(
-          page, table, '.spaceit_pad:nth-of-type(3) a', 'href'
-        );
+        const characterName = tableData.characterName || 'Unknown';
+        const role = tableData.role || 'Unknown';
+        const image = tableData.image;
+        const characterLink = tableData.characterLink;
 
         if (characterLink) {
           characterLinks.push({ url: characterLink, name: characterName });
@@ -586,36 +727,37 @@ export class MyanimelistService {
 
         const character = new AnimeCharacterEntity();
         character.animeID = animeId;
-        character.name = characterName?.trim() || 'Unknown';
+        character.name = characterName;
         character.image = image || null;
-        character.role = role?.trim() || 'Unknown';
+        character.role = role;
 
         const upsertedCharacter = await this.animeService.upsertAnimeCharacter(animeId, character);
         this.logger.debug(`Upserted character: ${upsertedCharacter.name} with ID: ${upsertedCharacter.id}`);
 
-        const voiceActorRows = await table.$$('.js-anime-character-va-lang');
+        // Process voice actors from the extracted data
+        for (const voiceActorData of tableData.voiceActors) {
+          const voiceActorName = voiceActorData.name || 'Unknown Unknown';
+          const voiceActorLanguage = voiceActorData.language;
+          const voiceActorLink = voiceActorData.link;
+          const voiceActorImage = voiceActorData.image;
 
-        for (const row of voiceActorRows) {
-          const voiceActorName = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'textContent');
-          const voiceActorLanguage = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad:nth-of-type(2)', 'textContent')
-          const voiceActorLink = await ClusterManager.findOneGivenElement(page, row, '.spaceit_pad a', 'href');
-          const voiceActorImage = await ClusterManager.findOneGivenElement(page, row, 'img', 'data-src');
-
-          const [familyName, givenName] = (voiceActorName || 'Unknown Unknown')
+          const [familyName, givenName] = voiceActorName
             .split(',')
-            .map((part) => part.trim());
+            .map((part: string) => part.trim());
+
+          // Ensure names are not empty or undefined for database constraints
+          const safeFamilyName = familyName || 'Unknown';
+          const safeGivenName = givenName || 'Unknown';
 
           if (voiceActorLink) {
-            staffLinks.push({ url: voiceActorLink, givenName, familyName });
+            staffLinks.push({ url: voiceActorLink, givenName: safeGivenName, familyName: safeFamilyName });
           }
 
-          const languageTrimmed = voiceActorLanguage?.trim() || null
-
           const staff = new AnimeStaffEntity();
-          staff.given_name = givenName || '';
-          staff.family_name = familyName || '';
+          staff.given_name = safeGivenName;
+          staff.family_name = safeFamilyName;
           staff.image = voiceActorImage || null;
-          staff.language = languageTrimmed || null
+          staff.language = voiceActorLanguage || null;
 
           const upsertedStaff = await this.animeService.upsertAnimeStaff(staff);
           this.logger.debug(`Upserted voice actor: ${upsertedStaff.given_name} ${upsertedStaff.family_name}`);
@@ -624,8 +766,8 @@ export class MyanimelistService {
             upsertedCharacter.id,
             upsertedStaff.id,
             character.name,
-            givenName,
-            familyName
+            safeGivenName,
+            safeFamilyName
           );
         }
 
@@ -634,24 +776,51 @@ export class MyanimelistService {
       }
     }
 
-    for (const characterLink of characterLinks) {
-      await this.puppeteerService.clusterManager.queue({
-        url: characterLink.url,
-        animeId,
-        characterName: characterLink.name,
-      }, async ({ page, data }) => {
-        await this.scrapeCharacterDetails({ page, data });
-      });
+    // Only queue additional scraping if we have links
+    if (characterLinks.length > 0) {
+      this.logger.debug(`Queuing ${characterLinks.length} character detail scraping tasks`);
+      for (const characterLink of characterLinks) {
+        try {
+          await this.puppeteerService.clusterManager.queue({
+            url: characterLink.url,
+            animeId,
+            characterName: characterLink.name,
+          }, async ({ page, data }) => {
+            try {
+              if (!page.isClosed()) {
+                await this.scrapeCharacterDetails({ page, data });
+              }
+            } catch (err) {
+              this.logger.warn(`Error scraping character details for ${data.url}: ${err.message}`);
+            }
+          });
+        } catch (queueError) {
+          this.logger.warn(`Failed to queue character detail scraping for ${characterLink.url}: ${queueError.message}`);
+        }
+      }
     }
 
-    for (const staffLink of staffLinks) {
-      await this.puppeteerService.clusterManager.queue({
-        url: staffLink.url,
-        givenName: staffLink.givenName,
-        familyName: staffLink.familyName,
-      }, async ({ page, data }) => {
-        await this.scrapeVoiceActorDetails({ page, data });
-      });
+    if (staffLinks.length > 0) {
+      this.logger.debug(`Queuing ${staffLinks.length} voice actor detail scraping tasks`);
+      for (const staffLink of staffLinks) {
+        try {
+          await this.puppeteerService.clusterManager.queue({
+            url: staffLink.url,
+            givenName: staffLink.givenName,
+            familyName: staffLink.familyName,
+          }, async ({ page, data }) => {
+            try {
+              if (!page.isClosed()) {
+                await this.scrapeVoiceActorDetails({ page, data });
+              }
+            } catch (err) {
+              this.logger.warn(`Error scraping voice actor details for ${data.url}: ${err.message}`);
+            }
+          });
+        } catch (queueError) {
+          this.logger.warn(`Failed to queue voice actor detail scraping for ${staffLink.url}: ${queueError.message}`);
+        }
+      }
     }
   }
 
@@ -668,42 +837,85 @@ export class MyanimelistService {
     }
     await this.handleCaptchas(page);
 
-    // Extract English and Japanese names
-    const fullName = await page.$eval('h2.normal_header', el => el.textContent?.trim() || '');
-    const [name, jpAliasRaw] = fullName.split('(');
-    const nameEn = name.trim();
-    const nameJp = jpAliasRaw?.replace(/[()]/g, '').trim() || null;
+    try {
+      // Extract English and Japanese names with multiple selector fallbacks
+      let fullName = '';
+      let nameEn = characterName; // Fallback to original character name
+      let nameJp = null;
 
-    // Extract image
+      try {
+        // Try different possible selectors for the character name
+        fullName = await ClusterManager.pageFindOne(page, 'h2.normal_header', 'textContent') ||
+                  await ClusterManager.pageFindOne(page, 'h1.title-name', 'textContent') ||
+                  await ClusterManager.pageFindOne(page, '.h1_bold_none', 'textContent') ||
+                  characterName;
 
+        if (fullName && fullName !== characterName) {
+          const [name, jpAliasRaw] = fullName.split('(');
+          nameEn = name.trim();
+          nameJp = jpAliasRaw?.replace(/[()]/g, '').trim() || null;
+        }
+      } catch (nameError) {
+        this.logger.warn(`Could not extract character name from ${url}, using fallback: ${characterName}`);
+      }
 
-    // Extract summary (may not exist)
-    const summary = await page.evaluate(() => {
-      const header = document.querySelector('h2.normal_header');
-      let node = header?.nextSibling;
-      while (node && node.nodeType !== 3) node = node.nextSibling; // find text node
-      const text = node?.textContent?.trim() || '';
-      return text.startsWith('No biography') ? null : text;
-    });
+      // Extract summary with error handling
+      let summary = null;
+      try {
+        summary = await page.evaluate(() => {
+          const header = document.querySelector('h2.normal_header') ||
+                        document.querySelector('h1.title-name') ||
+                        document.querySelector('.h1_bold_none');
+          if (!header) return null;
 
-    const character = new AnimeCharacterEntity();
-    character.animeID = animeId;
-    character.name = characterName;
-    character.title = nameJp;
-    character.role = "Main"; // fallback; real role might be per-anime not available here
-    character.summary = summary;
+          let node = header.nextSibling;
+          while (node && node.nodeType !== 3) node = node.nextSibling; // find text node
+          const text = node?.textContent?.trim() || '';
+          return text.startsWith('No biography') ? null : text;
+        });
+      } catch (summaryError) {
+        this.logger.debug(`Could not extract character summary from ${url}`);
+      }
 
-    // These fields aren't available from the character detail page directly
-    character.birthday = null;
-    character.zodiac = null;
-    character.gender = null;
-    character.race = null;
-    character.height = null;
-    character.weight = null;
-    character.martial_status = null;
+      const character = new AnimeCharacterEntity();
+      character.animeID = animeId;
+      character.name = characterName; // Use original name for consistency
+      character.title = nameJp;
+      character.role = "Main"; // fallback; real role might be per-anime not available here
+      character.summary = summary;
 
-    const upsertedCharacter = await this.animeService.upsertAnimeCharacter(animeId, character);
-    this.logger.debug(`Upserted character profile: ${upsertedCharacter.name} with ID: ${upsertedCharacter.id}`);
+      // These fields aren't available from the character detail page directly
+      character.birthday = null;
+      character.zodiac = null;
+      character.gender = null;
+      character.race = null;
+      character.height = null;
+      character.weight = null;
+      character.martial_status = null;
+
+      const upsertedCharacter = await this.animeService.upsertAnimeCharacter(animeId, character);
+      this.logger.debug(`Upserted character profile: ${upsertedCharacter.name} with ID: ${upsertedCharacter.id}`);
+
+    } catch (error) {
+      this.logger.error(`Error scraping character details for ${url}: ${error.message}`);
+      // Still try to save basic character info
+      const character = new AnimeCharacterEntity();
+      character.animeID = animeId;
+      character.name = characterName;
+      character.title = null;
+      character.role = "Unknown";
+      character.summary = null;
+      character.birthday = null;
+      character.zodiac = null;
+      character.gender = null;
+      character.race = null;
+      character.height = null;
+      character.weight = null;
+      character.martial_status = null;
+
+      await this.animeService.upsertAnimeCharacter(animeId, character);
+      this.logger.debug(`Saved basic character info: ${characterName}`);
+    }
   }
 
   public async scrapeVoiceActorDetails({ page, data }: any) {

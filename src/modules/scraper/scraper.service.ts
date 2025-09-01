@@ -4,6 +4,7 @@ import { AnidbService } from '../anidb/anidb.service'
 import { MyanimelistService } from '../myanimelist/myanimelist.service'
 import { PuppeteerService } from '../puppeteer/puppeteer.service'
 import { ScrapeRecordService } from '../scrape_record/scrape_record.service'
+import { SeasonYear } from '../common/season.types'
 
 @Injectable()
 export class ScraperService {
@@ -99,11 +100,22 @@ export class ScraperService {
   ) {
     await this.puppeteerService.setup(limit, headless)
 
+    // Create a dispatcher function that routes to the correct handler
+    const taskDispatcher = async ({ page, data }: any) => {
+      if (data.type === 'characters_staff') {
+        // This is a character/staff scraping task
+        return this.myanimelistService.scrapeCharactersAndStaff({ page, data })
+      } else {
+        // This is a regular anime page scraping
+        return this.myanimelistService.scrapeAnimePage({ page, data })
+      }
+    }
+
+    // Register the dispatcher as the task handler
     await this.puppeteerService
       .getManager()
-      .task(
-        this.myanimelistService.scrapeAnimePage.bind(this.myanimelistService),
-      )
+      .task(taskDispatcher)
+    
     this.puppeteerService
       .getManager()
       .getCluster()
@@ -150,11 +162,22 @@ export class ScraperService {
   ) {
     await this.puppeteerService.setup(limit, headless)
 
+    // Create a dispatcher function that routes to the correct handler
+    const taskDispatcher = async ({ page, data }: any) => {
+      if (data.type === 'characters_staff') {
+        // This is a character/staff scraping task
+        return this.myanimelistService.scrapeCharactersAndStaff({ page, data })
+      } else {
+        // This is a regular anime page scraping
+        return this.myanimelistService.scrapeAnimePage({ page, data })
+      }
+    }
+
+    // Register the dispatcher as the task handler
     await this.puppeteerService
       .getManager()
-      .task(
-        this.myanimelistService.scrapeAnimePage.bind(this.myanimelistService),
-      )
+      .task(taskDispatcher)
+    
     this.puppeteerService
       .getManager()
       .getCluster()
@@ -220,6 +243,64 @@ export class ScraperService {
     await this.puppeteerService.getManager().idle()
     await this.puppeteerService.getManager().close()
 
+    return 'ok'
+  }
+
+  async scrapeSeasonalAnime(
+    seasonYear: SeasonYear,
+    headless: boolean,
+    limit?: number,
+  ) {
+    this.logger.info(`Starting seasonal anime scraping for ${seasonYear}`)
+    
+    await this.puppeteerService.setup(limit || 50, headless)
+
+    // Create a dispatcher function that routes to the correct handler
+    const taskDispatcher = async ({ page, data }: any) => {
+      // Check if this is a seasonal collection task (seasonal URL)
+      if (data.url && data.url.includes('/anime/season/')) {
+        // This is the initial seasonal collection
+        return this.myanimelistService.collectSeasonalAnime({ page, data })
+      } else if (data.type === 'characters_staff') {
+        // This is a character/staff scraping task
+        return this.myanimelistService.scrapeCharactersAndStaff({ page, data })
+      } else {
+        // This is a regular anime page scraping (might have seasonYear for tagging)
+        return this.myanimelistService.scrapeAnimePage({ page, data })
+      }
+    }
+
+    // Register the dispatcher as the task handler
+    await this.puppeteerService
+      .getManager()
+      .task(taskDispatcher)
+
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+
+    const seasonalURL = this.myanimelistService.generateSeasonalURL(seasonYear)
+    this.logger.info(`Collecting seasonal anime from: ${seasonalURL}`)
+    
+    await this.puppeteerService.getManager().queue({
+      url: seasonalURL,
+      seasonYear: seasonYear,
+    })
+
+    // The collectSeasonalAnime method will handle queuing individual anime pages
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    this.logger.info(`Completed seasonal anime scraping for ${seasonYear}`)
     return 'ok'
   }
 }

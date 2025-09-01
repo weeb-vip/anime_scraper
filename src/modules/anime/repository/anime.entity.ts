@@ -6,8 +6,10 @@ import {
   PrimaryGeneratedColumn,
   PrimaryColumn,
   Generated,
+  OneToMany,
 } from 'typeorm'
 import { RECORD_TYPE } from './interface'
+import { AnimeSeasonEntity } from './anime-season.entity'
 
 @Entity({ name: 'anime' })
 export class Anime {
@@ -125,6 +127,9 @@ export class Anime {
 
   @Column({ name: 'ranking', nullable: true })
   ranking: number
+
+  @OneToMany(() => AnimeSeasonEntity, animeSeason => animeSeason.anime)
+  seasons: AnimeSeasonEntity[]
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

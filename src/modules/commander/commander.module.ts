@@ -9,6 +9,8 @@ import { DeduplicateModule } from '../deduplicate/deduplicate.module'
 import { ScraperCommand } from './scrape.command'
 import { CollectCommand } from './collect.command'
 import { NewCommand } from './new.command'
+import { SeasonalCommand } from './seasonal.command'
+import { ValidateCommand } from './validate.command'
 
 import { DeduplicateCommand } from './deduplicate.command'
 
@@ -16,6 +18,7 @@ import { DeduplicateCommand } from './deduplicate.command'
   imports: [
     ScraperModule,
     TypeormConnectorModule,
+    AnimeModule,
     DeduplicateModule,
     WinstonModule.forRoot({
       // options
@@ -52,6 +55,6 @@ import { DeduplicateCommand } from './deduplicate.command'
     }),
   ],
   controllers: [],
-  providers: [NewCommand, ScraperCommand, CollectCommand, DeduplicateCommand],
+  providers: [NewCommand, ScraperCommand, CollectCommand, DeduplicateCommand, SeasonalCommand, ValidateCommand],
 })
 export class ScraperCommandModule {}
