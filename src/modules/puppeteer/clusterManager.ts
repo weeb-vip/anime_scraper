@@ -11,7 +11,7 @@ class ClusterManager {
       concurrency: Cluster.CONCURRENCY_CONTEXT,
       maxConcurrency: concurrency,
       retryLimit: 3,
-      timeout: 60 * 2000,
+      timeout: 5 * 60 * 1000, // 5 minutes
       monitor: false,
       puppeteer,
       puppeteerOptions: {

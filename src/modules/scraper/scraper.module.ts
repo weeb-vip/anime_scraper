@@ -5,6 +5,7 @@ import { AnidbModule } from '../anidb/anidb.module'
 import { alignColorsAndTime } from '../common/loggerformat'
 import { MyanimelistModule } from '../myanimelist/myanimelist.module'
 import { PuppeteerModule } from '../puppeteer/puppeteer.module'
+import { ScrapeRecordModule } from '../scrape_record/scrape_record.module'
 import { ScraperService } from './scraper.service'
 
 @Module({
@@ -12,6 +13,7 @@ import { ScraperService } from './scraper.service'
     PuppeteerModule,
     AnidbModule,
     MyanimelistModule,
+    ScrapeRecordModule,
     WinstonModule.forRoot({
       // options
       transports: [

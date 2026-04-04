@@ -14,6 +14,7 @@ export class ScraperService {
     private readonly puppeteerService: PuppeteerService,
     private readonly anidbService: AnidbService,
     private readonly myanimelistService: MyanimelistService,
+    private readonly scrapeRecordService: ScrapeRecordService,
   ) {}
 
   scrapeSite(url: string) {
@@ -142,6 +143,13 @@ export class ScraperService {
         (url: string) => !excludedUrls.includes(url),
       )
     }
+    // Filter out already-scraped URLs for resume capability
+    const alreadyScraped = this.scrapeRecordService.getScrapedUrls()
+    const beforeCount = processUrls.length
+    processUrls = processUrls.filter((url: string) => !alreadyScraped.has(url))
+    if (beforeCount !== processUrls.length) {
+      this.logger.info(`Resuming: skipping ${beforeCount - processUrls.length} already-scraped URLs, ${processUrls.length} remaining`)
+    }
     await Promise.all(
       processUrls.map((url: string) =>
         this.puppeteerService.getManager().queue(url),
@@ -177,7 +185,7 @@ export class ScraperService {
     await this.puppeteerService
       .getManager()
       .task(taskDispatcher)
-    
+
     this.puppeteerService
       .getManager()
       .getCluster()
@@ -200,6 +208,13 @@ export class ScraperService {
       processUrls = processUrls.filter(
         (url: string) => !excludedUrls.includes(url),
       )
+    }
+    // Filter out already-scraped URLs for resume capability
+    const alreadyScraped = this.scrapeRecordService.getScrapedUrls()
+    const beforeCount = processUrls.length
+    processUrls = processUrls.filter((url: string) => !alreadyScraped.has(url))
+    if (beforeCount !== processUrls.length) {
+      this.logger.info(`Resuming: skipping ${beforeCount - processUrls.length} already-scraped URLs, ${processUrls.length} remaining`)
     }
     await Promise.all(
       processUrls.map((url: string) =>

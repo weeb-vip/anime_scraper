@@ -20,4 +20,14 @@ export class ScrapeRecordService {
     // write to file
     fs.appendFileSync('scrape_record.txt', url + '\n')
   }
+
+  getScrapedUrls(): Set<string> {
+    if (!fs.existsSync('scrape_record.txt')) {
+      return new Set()
+    }
+    const contents = fs.readFileSync('scrape_record.txt', 'utf-8')
+    return new Set(
+      contents.split(/\r?\n/).filter((line) => line.trim().length > 0),
+    )
+  }
 }
