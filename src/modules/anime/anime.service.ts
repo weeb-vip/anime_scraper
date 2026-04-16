@@ -44,6 +44,12 @@ export class AnimeService {
       throw new Error('MyAnimeList URL is required for all anime entries')
     }
 
+    // Extract MAL ID from the URL (e.g., https://myanimelist.net/anime/52991/...)
+    const malIdMatch = myAnimeListUrl.match(/\/anime\/(\d+)/)
+    if (malIdMatch) {
+      animeData.mal_id = parseInt(malIdMatch[1], 10)
+    }
+
     // First check if a MyAnimeList link already exists for this URL
     const existingLink = await this.myanimelistlinkRepository.findOne({
       where: { link: myAnimeListUrl },
