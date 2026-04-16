@@ -2,6 +2,7 @@ export interface IAnime {
   id: string
 
   anidbid: string
+  mal_id: number
   type: RECORD_TYPE
   title_en: string
   title_jp: string
