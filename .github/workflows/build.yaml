@@ -37,6 +37,7 @@ jobs:
         run: |
           echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
       - name: release
+        id: semantic
         uses: cycjimmy/semantic-release-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -48,31 +49,23 @@ jobs:
             @semantic-release/git@10.0.1
             @semantic-release/exec@6.0.2
             @semantic-release/changelog@6.0.1
-      - uses: actions/checkout@v3
-      - name: Set env
-        run: |
-          git fetch --tags
-          export GITHUB_REF_NAME=$(git describe --tags --abbrev=0)
-          echo "RELEASE_VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
-      - name: Set env
-        run: |
-          git fetch --tags
-          export GITHUB_REF_NAME=$(git describe --tags --abbrev=0)
-          echo "RELEASE_VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
-      - name: Set env
-        run: |
-          echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      # Only touch argocd when semantic-release actually published a release.
+      # Without this guard the steps below ran on every push/PR, re-committing
+      # (or, with no tags, blanking) the service's tag in argocd.
       - name: checkout argocd repo
+        if: steps.semantic.outputs.new_release_published == 'true'
         uses: actions/checkout@v3
         with:
           repository: 'weeb-vip/weeb-argocd'
           token: ${{ secrets.ACCESS_TOKEN }}
           path: 'argocd'
       - name: deploy to argocd
+        if: steps.semantic.outputs.new_release_published == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           REPO_NAME: ${{ env.REPO_NAME }}
+          RELEASE_VERSION: ${{ steps.semantic.outputs.new_release_version }}
         # pull argocd repo and push to argocd
         run: |
           RELEASE_VERSION=$(echo $RELEASE_VERSION | sed 's/v//')
