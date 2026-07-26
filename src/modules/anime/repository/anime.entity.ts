@@ -20,6 +20,9 @@ export class Anime {
   @Column({ name: 'anidbid', nullable: true })
   anidbid: string
 
+  @Column({ name: 'mal_id', nullable: true, type: 'int' })
+  mal_id: number
+
   @Column({ name: 'type', enum: RECORD_TYPE, default: RECORD_TYPE.Anime })
   type: RECORD_TYPE
 
