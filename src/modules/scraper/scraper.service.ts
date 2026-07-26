@@ -269,10 +269,14 @@ export class ScraperService {
     seasonYear: SeasonYear,
     headless: boolean,
     limit?: number,
+    dataTypes?: string[],
   ) {
     this.logger.info(`Starting seasonal anime scraping for ${seasonYear}`)
-    
+
     await this.puppeteerService.setup(limit || 50, headless)
+
+    // Limit which pieces of data get scraped (main is always the anchor).
+    this.myanimelistService.setScrapeDataTypes(dataTypes)
 
     // Create a dispatcher function that routes to the correct handler
     const taskDispatcher = async ({ page, data }: any) => {
