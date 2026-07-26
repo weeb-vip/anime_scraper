@@ -3,11 +3,13 @@ import { Command, CommandRunner, Option } from 'nest-commander'
 import { Logger } from 'winston'
 import { ScraperService } from '../scraper/scraper.service'
 import { SeasonYear, isValidSeasonYear } from '../common/season.types'
+import { SCRAPE_DATA_TYPES } from './scrape.command'
 
 interface SeasonalCommandOptions {
   season: SeasonYear
   headless?: boolean
   limit?: number
+  data?: string[]
 }
 
 @Command({
@@ -40,10 +42,14 @@ export class SeasonalCommand extends CommandRunner {
     this.logger.info(`Starting seasonal scraping for ${options.season}`)
     
     try {
+      if (options.data && options.data.length > 0) {
+        this.logger.info(`Scraping only: ${options.data.join(', ')} (+ main)`)
+      }
       await this.scraperService.scrapeSeasonalAnime(
         options.season,
         !!options.headless,
-        options.limit
+        options.limit,
+        options.data && options.data.length > 0 ? options.data : null,
       )
       this.logger.info(`Completed seasonal scraping for ${options.season}`)
     } catch (error) {
@@ -73,5 +79,32 @@ export class SeasonalCommand extends CommandRunner {
   })
   getLimit(val: string): number {
     return parseInt(val, 10)
+  }
+
+  @Option({
+    flags: '-D, --data [data]',
+    description:
+      `Comma-separated data to scrape: ${SCRAPE_DATA_TYPES.join(', ')}. ` +
+      `'main' (metadata + seasons) is always scraped; this limits the extra ` +
+      `crawls. Defaults to all. e.g. --data main,episodes`,
+  })
+  getData(val: string): string[] {
+    const requested = val
+      .split(',')
+      .map((v) => v.trim().toLowerCase())
+      .filter((v) => v.length > 0)
+    const valid = requested.filter((v) =>
+      (SCRAPE_DATA_TYPES as readonly string[]).includes(v),
+    )
+    const invalid = requested.filter(
+      (v) => !(SCRAPE_DATA_TYPES as readonly string[]).includes(v),
+    )
+    if (invalid.length > 0) {
+      this.logger.warn(
+        `Ignoring unknown --data values: ${invalid.join(', ')}. ` +
+          `Valid: ${SCRAPE_DATA_TYPES.join(', ')}`,
+      )
+    }
+    return valid
   }
 }
