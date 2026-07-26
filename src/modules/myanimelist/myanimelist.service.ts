@@ -26,6 +26,18 @@ export class MyanimelistService {
     },
   }
 
+  // Which pieces of data to scrape. `main` (anime metadata + seasons) is always
+  // the anchor; `characters` and `episodes` are the expensive extra crawls that
+  // the `--data` flag can skip. Defaults to everything.
+  private scrapeDataTypes: Set<string> = new Set(['main', 'characters', 'episodes'])
+
+  setScrapeDataTypes(types?: string[]): void {
+    this.scrapeDataTypes =
+      types && types.length > 0
+        ? new Set(types.map((t) => t.toLowerCase()))
+        : new Set(['main', 'characters', 'episodes'])
+  }
+
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
@@ -569,34 +581,44 @@ export class MyanimelistService {
       }
     }
 
-    // Queue character and staff scraping as a separate task
-    try {
-      await this.puppeteerService.getManager().queue({
-        url,
-        id: upsertedAnime.id,
-        type: 'characters_staff',
-      })
-      this.logger.debug(`Queued character/staff scraping for ${upsertedAnime.title_en}`)
-    } catch (e) {
-      this.logger.error(
-        `Error queuing characters and staff scraping for ${upsertedAnime.title_en}`,
-        e,
-      )
+    // Queue character and staff scraping as a separate task (skipped unless
+    // 'characters' is in the requested --data set).
+    if (this.scrapeDataTypes.has('characters')) {
+      try {
+        await this.puppeteerService.getManager().queue({
+          url,
+          id: upsertedAnime.id,
+          type: 'characters_staff',
+        })
+        this.logger.debug(`Queued character/staff scraping for ${upsertedAnime.title_en}`)
+      } catch (e) {
+        this.logger.error(
+          `Error queuing characters and staff scraping for ${upsertedAnime.title_en}`,
+          e,
+        )
+      }
+    } else {
+      this.logger.debug(`Skipping character/staff scraping for ${upsertedAnime.title_en} (not in --data)`)
     }
 
-    try {
-      await this.puppeteerService.clusterManager.queue({
-        url,
-        id: upsertedAnime.id,
-      }, async ({ page, data }) => {
-        await this.scrapeEpisode({ page, data });
-      });
-      this.logger.info(`Queued episode scraping for ${upsertedAnime.title_en}`);
-    } catch (e) {
-      this.logger.error(
-        `Error queuing episodes for ${upsertedAnime.title_en}`,
-        e,
-      )
+    // Queue episode scraping (skipped unless 'episodes' is in the --data set).
+    if (this.scrapeDataTypes.has('episodes')) {
+      try {
+        await this.puppeteerService.clusterManager.queue({
+          url,
+          id: upsertedAnime.id,
+        }, async ({ page, data }) => {
+          await this.scrapeEpisode({ page, data });
+        });
+        this.logger.info(`Queued episode scraping for ${upsertedAnime.title_en}`);
+      } catch (e) {
+        this.logger.error(
+          `Error queuing episodes for ${upsertedAnime.title_en}`,
+          e,
+        )
+      }
+    } else {
+      this.logger.debug(`Skipping episode scraping for ${upsertedAnime.title_en} (not in --data)`)
     }
 
     this.scrapeRecordService.recordSuccessfulScrape(data)
