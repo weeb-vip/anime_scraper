@@ -15,7 +15,7 @@ export class addMalIdToAnime1749945600000 implements MigrationInterface {
                 AS integer
             )
             FROM "myanimelist_link" ml
-            WHERE ml."anime_id" = a."id"
+            WHERE ml."anime_id" = a."id"::text
             AND ml."link" ~ '/anime/[0-9]+'
             AND a."mal_id" IS NULL
         `);
