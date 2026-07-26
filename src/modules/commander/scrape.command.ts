@@ -14,7 +14,13 @@ interface BasicCommandOptions {
   excludeFile?: string
   new?: boolean
   days?: number
+  data?: string[]
 }
+
+// The pieces of data a scrape can produce. `main` (anime metadata + MAL link +
+// seasons) is always scraped as the anchor; `characters` and `episodes` are the
+// expensive extra crawls that this flag lets you skip.
+export const SCRAPE_DATA_TYPES = ['main', 'characters', 'episodes'] as const
 
 
 @Command({
@@ -68,6 +74,7 @@ export class ScraperCommand extends CommandRunner {
         options?.days !== undefined && options?.days !== null
           ? options.days
           : null,
+        options?.data && options.data.length > 0 ? options.data : null,
       )
     }
   }
@@ -131,6 +138,33 @@ export class ScraperCommand extends CommandRunner {
     return parseInt(val, 10)
   }
 
+  @Option({
+    flags: '-D, --data [data]',
+    description:
+      `Comma-separated data to scrape: ${SCRAPE_DATA_TYPES.join(', ')}. ` +
+      `'main' (metadata + seasons) is always scraped; this limits the extra ` +
+      `crawls. Defaults to all. e.g. --data main,episodes`,
+  })
+  getData(val: string): string[] {
+    const requested = val
+      .split(',')
+      .map((v) => v.trim().toLowerCase())
+      .filter((v) => v.length > 0)
+    const valid = requested.filter((v) =>
+      (SCRAPE_DATA_TYPES as readonly string[]).includes(v),
+    )
+    const invalid = requested.filter(
+      (v) => !(SCRAPE_DATA_TYPES as readonly string[]).includes(v),
+    )
+    if (invalid.length > 0) {
+      this.logger.warn(
+        `Ignoring unknown --data values: ${invalid.join(', ')}. ` +
+          `Valid: ${SCRAPE_DATA_TYPES.join(', ')}`,
+      )
+    }
+    return valid
+  }
+
   scrapeSite(
     param: string[],
     option: string,
@@ -140,8 +174,12 @@ export class ScraperCommand extends CommandRunner {
     excludedUrls?: string[],
     newlyadded?: boolean,
     days?: number,
+    dataTypes?: string[],
   ): void {
     this.logger.info(`scape site: ${option}`)
+    if (dataTypes && dataTypes.length > 0) {
+      this.logger.info(`Scraping only: ${dataTypes.join(', ')} (+ main)`)
+    }
     switch (option) {
       case 'anidb':
         this.scapperService.scrapeAnidb(param)
@@ -155,7 +193,8 @@ export class ScraperCommand extends CommandRunner {
           urls,
           excludedUrls,
           newlyadded,
-          days
+          days,
+          dataTypes,
         )
         break
 

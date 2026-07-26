@@ -97,9 +97,13 @@ export class ScraperService {
     urls?: string[],
     excludedUrls?: string[],
     newlyAdded?: boolean,
-    days?: number
+    days?: number,
+    dataTypes?: string[],
   ) {
     await this.puppeteerService.setup(limit, headless)
+
+    // Limit which pieces of data get scraped (main is always the anchor).
+    this.myanimelistService.setScrapeDataTypes(dataTypes)
 
     // Create a dispatcher function that routes to the correct handler
     const taskDispatcher = async ({ page, data }: any) => {
