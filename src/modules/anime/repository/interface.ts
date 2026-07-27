@@ -10,6 +10,7 @@ export interface IAnime {
   title_kanji: string
   title_synonyms: string[]
   image_url: string
+  trailer_url?: string
   synopsis: string
   episodes: number
   status: string

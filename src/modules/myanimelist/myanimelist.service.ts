@@ -461,8 +461,26 @@ export class MyanimelistService {
     ).map(
       genre => getFirstHalfIfEqual(genre),
     )
+    // Promotional video (trailer). MAL embeds it as a youtube-nocookie link,
+    // e.g. <a class="... video-unit promotion" href=".../embed/<id>?...">.
+    // Many anime have no PV, so the selector is allowed to miss.
+    let trailerUrl: string | null = null
+    try {
+      const promoHref = await page.$eval(
+        'a.video-unit.promotion',
+        (el: any) => el.getAttribute('href'),
+      )
+      const match = promoHref && promoHref.match(/\/embed\/([A-Za-z0-9_-]{6,})/)
+      if (match) {
+        trailerUrl = `https://www.youtube.com/watch?v=${match[1]}`
+      }
+    } catch (e) {
+      // No promotional video on this page — leave trailerUrl null.
+    }
+
     const parsedData = {
       image_url: await ClusterManager.pageFindOne(page, '.leftside img', 'src'),
+      trailer_url: trailerUrl,
       ranking: rank,
       anidbid: anidbId,
       title_en: res['english'],

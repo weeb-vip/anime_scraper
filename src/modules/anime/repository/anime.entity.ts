@@ -56,6 +56,9 @@ export class Anime {
   @Column({ name: 'image_url', nullable: true })
   image_url: string
 
+  @Column({ name: 'trailer_url', nullable: true })
+  trailer_url: string
+
   @Column({ name: 'synopsis', nullable: true })
   synopsis: string
 
