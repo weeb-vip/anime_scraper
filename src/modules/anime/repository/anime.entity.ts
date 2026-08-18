@@ -23,6 +23,12 @@ export class Anime {
   @Column({ name: 'mal_id', nullable: true, type: 'int' })
   mal_id: number
 
+  // Assigned by a postgres trigger on insert and never rewritten afterwards,
+  // because it is a public URL. Leave it undefined when saving; setting it to
+  // null asks the trigger to mint a fresh one.
+  @Column({ name: 'url_slug', nullable: true })
+  url_slug: string
+
   @Column({ name: 'type', enum: RECORD_TYPE, default: RECORD_TYPE.Anime })
   type: RECORD_TYPE
 
