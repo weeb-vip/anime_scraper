@@ -966,19 +966,30 @@ export class MyanimelistService {
     ).then(text => text?.replace('Family name:', '').trim())
       .catch(() => null);
 
-    const birthday = await ClusterManager.pageFindOne(
-      page,
-      'div.spaceit_pad:has(span.dark_text:contains("Birthday"))',
-      'textContent'
-    ).then(text => text?.replace('Birthday:', '').trim())
-      .catch(() => null);
+    // :contains() is a jQuery selector, not CSS -- querySelector throws
+    // SyntaxError on it, the .catch below swallowed that, and every one of the
+    // 22,071 staff rows ended up with a null birthday. MAL puts it in a plain
+    // div.spaceit_pad as "Birthday: Feb 25, 1989", so read them and pick.
+    const birthday = await page.$$eval('div.spaceit_pad', (els: Element[]) => {
+      for (const el of els) {
+        const text = (el.textContent || '').trim();
+        if (text.startsWith('Birthday:')) {
+          // MAL renders these with irregular internal spacing ("Feb  25, 1989").
+          return text.replace('Birthday:', '').replace(/\s+/g, ' ').trim();
+        }
+      }
+      return null;
+    }).catch(() => null);
 
+    // MAL uses at least three labels for this across people pages -- "Hometown",
+    // "Birthplace" and "Birth place". Matching only the last is why it was
+    // populated for 786 of 22,071 staff.
     const birthPlace = await ClusterManager.pageFindOne(
       page,
       'div.people-informantion-more',
       'innerHTML'
     ).then(html => {
-      const match = html.match(/Birth place:\s*(.+?)<br>/);
+      const match = html.match(/(?:Birth\s?place|Hometown):\s*(.+?)<br>/i);
       return match ? match[1].trim() : null;
     }).catch(() => null);
 
@@ -1000,18 +1011,34 @@ export class MyanimelistService {
       return match ? match[1].trim() : null;
     }).catch(() => null);
 
+    // The biography sits in the same block as the key/value facts, after them.
+    // This used to drop three hardcoded labels and keep the rest, which failed
+    // twice over: 'innerText' was unsupported by pageFindOne so the input was
+    // always null, and the real labels vary (Hometown, Height, Member
+    // Favorites, ...) so hardcoding three of them would have leaked the others
+    // into the biography anyway.
+    //
+    // Drop every leading "Label: value" line instead, and keep from the first
+    // line of prose onwards.
     const summary = await ClusterManager.pageFindOne(
       page,
       'div.people-informantion-more',
       'innerText'
-    ).then(text => {
-      return text
-        .split('\n')
-        .filter(line =>
-          !line.includes('Birth place:') &&
-          !line.includes('Blood type:') &&
-          !line.includes('Hobbies:')
-        ).join('\n').trim();
+    ).then((text: string | null) => {
+      if (!text) return null;
+      const lines = text.split('\n');
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i].trim();
+        // A fact line, or the blank line separating the facts from the prose.
+        if (line === '' || /^[A-Z][A-Za-z ]{0,24}:\s/.test(line)) {
+          i++;
+          continue;
+        }
+        break;
+      }
+      const body = lines.slice(i).join('\n').trim();
+      return body || null;
     }).catch(() => null);
 
     const image = await ClusterManager.pageFindOne(
