@@ -96,6 +96,14 @@ class ClusterManager {
           if (subTarget === 'textContent') {
             return element.textContent
           }
+          // innerText is a property, not an attribute. Without this branch it
+          // fell through to getAttribute('innerText'), which returns null for
+          // every element -- and callers that immediately .split() it threw,
+          // silently, into a .catch(() => null). That is why every voice actor
+          // summary was empty.
+          if (subTarget === 'innerText') {
+            return (element as HTMLElement).innerText
+          }
           try {
             return element.getAttribute(subTarget)
           } catch (error) {
