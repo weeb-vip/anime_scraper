@@ -1,7 +1,9 @@
 # Manga, light novels, and source works
 
 Plan for scraping the works anime are adapted from, and using them to relate
-anime to each other. Written 2026-08-22, paused before implementation.
+anime to each other. Written 2026-08-22, paused before implementation, and
+revised 2026-08-24 after the read store moved to Postgres and the event
+pipeline moved to NATS -- see "Resolved since this was written".
 
 ## Why
 
@@ -93,57 +95,64 @@ recovered.
 Not CDC'd (no `myanimelist_link` table exists in MySQL), so changing it has no
 downstream blast radius.
 
-## Open decision: get off Vitess first
+## Resolved since this was written: the read store is Postgres
 
-**Preference stated: move to Postgres, off PlanetScale/Vitess.** Migrations are
-materially easier there, and today gave concrete examples:
+The move happened. `anime-api` reads
+`weeb-vip-db...rds.amazonaws.com:5432` -- Postgres, not PlanetScale -- and so
+do the sync services. The only MySQL left in the estate is `mysql-staging-0`
+in `weeb-staging`.
 
-- **No foreign keys.** `000032_create_tags_table` says so in a comment —
-  "Foreign keys not used due to Vitess/PlanetScale compatibility".
-- **`migrate up` cannot build a database from scratch.** An earlier migration
-  uses `DELIMITER`, which golang-migrate cannot parse, so the chain dies
-  partway. New environments cannot be bootstrapped from migrations alone.
-- **Accent folding by hand.** `000038_add_url_slug_to_anime_staff` needed a
-  ~40-branch nested `REPLACE` chain to fold accents in a generated column.
-  Postgres does that with `unaccent()`.
+Two of the three migration pains listed here are therefore gone: foreign keys
+are available, and `unaccent()` replaced the ~40-branch `REPLACE` chain
+(`anime-api` migration `000051`). Whatever remains of the `DELIMITER` problem
+belongs to the retired MySQL chain, not to new work.
 
-This changes the manga sequencing, because building `work` under the current
-architecture means building it **twice**:
+`animeschedule-sync` and `image-sync-backfill` still carry
+`us-east.connect.psdb.cloud:3306` and a `pscale_pw_...` credential in their
+values. Those jobs are either broken or the last thing holding PlanetScale
+open; worth settling before building on the assumption that it is gone.
+
+### What did not change: the shape
+
+The pipeline is the same, with both ends now Postgres:
 
 ```
-today:      Postgres table -> Debezium topic -> sync consumer command
-            -> MySQL migration -> reconcileTables entry -> anime-api repository
-Postgres:   Postgres table -> anime-api repository
+scraper Postgres -> Debezium -> NATS (ANIMEDB) -> sync service -> read-store Postgres
 ```
 
-Every table added before the move is pipeline work that gets thrown away. And
-`work` is not one table for long — characters, authors, and relations follow.
+So the earlier concern still stands, and the strangler that was proposed to
+avoid it does not apply -- there is no second store to strangle. A new entity
+is defined twice, once in each database, with a consumer between them.
 
-### Suggested approach: strangler, not big bang
+The CDC leg, at least, is free. Debezium runs with
+`schema.include.list=public` and no table filter, so it captures **every**
+table in the scraper's schema -- `migrations` and `scraper` are in the stream
+today alongside the real ones. A new table produces
+`anime-db.public.work` on its first row with no configuration change, no new
+replication slot, and no new stream: `ANIMEDB` already claims `anime-db.>` and
+its retention covers it.
 
-Do not block manga behind a full MySQL to Postgres migration, and do not build
-manga on MySQL. Instead:
+What is not free is the consumer and the second definition:
 
-1. `work` lives in Postgres and **anime-api reads it directly**, skipping CDC
-   entirely.
-2. `anime` keeps reading MySQL as today.
-3. The join is application-level and cheap: `anime.source_work_id` lives on the
-   anime row in MySQL, so "this anime's source" is one Postgres lookup by id,
-   and "anime adapting this work" is one MySQL query by `source_work_id`.
+```
+free:      the Debezium capture, the subject, the stream, the retention
+to build:  a migration in the scraper's Postgres
+           a consumer command in a sync service
+           a migration in the read store
+           a repository and schema in anime-api
+```
 
-This proves the Postgres-direct read path on a new, low-traffic entity family
-before touching the load-bearing anime path. If it works, migrate anime after.
-If it does not, little is lost.
+Two notes for whoever writes the consumer, learned the hard way on 2026-08-24:
 
-Cost to weigh: anime-api holds two database connections for a period, and one
-service reading two stores is a real complexity. Bounded, and temporary if the
-full move follows.
-
-**Counter-argument worth keeping honest:** prod MySQL is PlanetScale, a managed
-service, and is one of the few components in this stack that has not caused
-trouble. In-cluster Postgres on seven nodes that have had memory pressure and a
-`NodeNotReady` is a different risk profile. The strangler order matters partly
-because it lets that be evaluated on `work` before it is bet on `anime`.
+- It consumes `anime-db.>`, which is Debezium's stream, so it needs
+  `NATSSTREAMNAME=ANIMEDB`. JetStream refuses two streams whose subjects
+  overlap, and without this the driver tries to create its own.
+- If it also *publishes* -- an image event, say -- it must build a **second**
+  driver for that, with no `StreamName`. ep uses one driver's stream for both
+  directions, and publishing through the consumer's driver asks JetStream to
+  add the published subject to the CDC stream, which it refuses. The message
+  then never acks and redelivers forever. This wedged four of six consumers in
+  production.
 
 ## Scope of the payoff
 
@@ -163,8 +172,8 @@ every re-adaptation case, which nothing else reaches.
 
 Ordered. Nothing after step 1 is started.
 
-1. **`myanimelist_link.record_id`** — drafted, uncommitted, on branch
-   `feat/work-table`:
+1. **`myanimelist_link.record_id`** — written, committed on branch
+   `feat/work-table`, not yet raised as a pull request:
    `migrations/1787184000000-GeneralizeMyanimelistLinkRecordId.ts`.
    Adds `record_id`, backfills from `anime_id`, indexes `(link)` uniquely and
    `(type, record_id)`. Leaves `anime_id` in place so the migration and the
@@ -201,7 +210,9 @@ Ordered. Nothing after step 1 is started.
    unresolved, resolve later via `myanimelist_link` — the same pattern that
    makes relations recoverable.
 
-7. **Read path** — per the strangler decision above.
+7. **Read path** — ordinary. `work` is a table in the read store beside
+   `anime`, so `anime.source_work_id` is a column and both directions are a
+   plain join. No second connection, no cross-store lookup.
 
 8. **`AnimeRelation.SHARED_SOURCE`** in anime-api. The enum already exists and
    documents this gap; adding a value is non-breaking, and the frontend already
