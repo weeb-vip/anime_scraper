@@ -29,6 +29,35 @@ export class GeneralizeMyanimelistLinkRecordId1787184000000 implements Migration
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "myanimelist_link" ADD "record_id" character varying(36)`);
 
+        // Collapse duplicate links before the unique index below, which would
+        // otherwise fail outright: production holds 30,641 rows over 30,155
+        // distinct links -- 485 links duplicated across 971 rows, one of them
+        // three times.
+        //
+        // They are safe to collapse. No link maps to two different anime: the
+        // duplicates are one record scraped under different titles, because
+        // upsert() matched on name before link, so "Kikou Ryouhei Merowlink",
+        // "Kikou Ryouhei Mellowlink" and "Armor Hunter Mellowlink" became three
+        // rows for one URL. 399 of the duplicate rows never resolved to an anime
+        // at all.
+        //
+        // Keep the row that resolves to an anime, then the most recently
+        // updated, then the highest id -- deterministic, and it never discards a
+        // resolution in favour of a NULL.
+        await queryRunner.query(`
+            DELETE FROM "myanimelist_link"
+            WHERE "id" IN (
+                SELECT "id" FROM (
+                    SELECT "id", row_number() OVER (
+                        PARTITION BY "link"
+                        ORDER BY ("anime_id" IS NOT NULL) DESC, "updated_at" DESC, "id" DESC
+                    ) AS rn
+                    FROM "myanimelist_link"
+                ) ranked
+                WHERE ranked.rn > 1
+            )
+        `);
+
         // Backfill: every existing row is an anime link by construction.
         await queryRunner.query(`UPDATE "myanimelist_link" SET "record_id" = "anime_id" WHERE "anime_id" IS NOT NULL`);
 
