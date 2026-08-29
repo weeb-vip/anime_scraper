@@ -58,6 +58,19 @@ export class MangaCommand extends CommandRunner {
     )
   }
 
+  // Declared, not just read. nest-commander only populates options that have
+  // an @Option; the field existing on the options interface is not enough, and
+  // TypeScript cannot see the difference. Without this, --file parsed on the
+  // parent command, never reached here, and every run ended with "No manga URLs
+  // given" while appearing to have been passed a file.
+  @Option({
+    flags: '--file [file]',
+    description: 'JSON file holding an array of MyAnimeList manga URLs',
+  })
+  getFile(val: string): string {
+    return val
+  }
+
   @Option({
     flags: '-ms, --msite [site]',
     description: 'What site to scrape (only myanimelist)',
