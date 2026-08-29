@@ -6,6 +6,7 @@ import { AnimeModule } from '../anime/anime.module'
 import { alignColorsAndTime } from '../common/loggerformat'
 import { PuppeteerModule } from '../puppeteer/puppeteer.module'
 import { ScrapeRecordModule } from '../scrape_record/scrape_record.module'
+import { WorkModule } from '../work/work.module'
 import { MyanimelistService } from './myanimelist.service'
 import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
 
@@ -14,6 +15,7 @@ import { MyanimelistlinkRepository } from './repository/myanimelist.repository'
     TypeOrmModule.forFeature([MyanimelistlinkRepository]),
     PuppeteerModule,
     AnimeModule,
+    WorkModule,
     WinstonModule.forRoot(
       ((name: string) => ({
         // options

@@ -23,6 +23,9 @@ export interface IAnime {
   studios: string[]
   rating: string
   ranking: number
+  // The work this anime adapts, when known. Null for originals and for sources
+  // MAL's manga database does not cover -- which is most of the catalogue.
+  source_work_id: string
   createdAt: Date
   updatedAt: Date
 }

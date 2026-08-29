@@ -35,6 +35,7 @@ export class AnimeRepository extends Repository<Anime> {
           studios: item.studios,
           rating: item.rating,
           ranking: item.ranking,
+          source_work_id: item.source_work_id,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -70,6 +71,7 @@ export class AnimeRepository extends Repository<Anime> {
           studios: item.studios,
           rating: item.rating,
           ranking: item.ranking,
+          source_work_id: item.source_work_id,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -103,6 +105,7 @@ export class AnimeRepository extends Repository<Anime> {
           studios: item.studios,
           rating: item.rating,
           ranking: item.ranking,
+          source_work_id: item.source_work_id,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }
@@ -154,6 +157,7 @@ export class AnimeRepository extends Repository<Anime> {
         studios: link.studios,
         rating: link.rating,
         ranking: link.ranking,
+        source_work_id: link.source_work_id,
         createdAt: link.createdAt,
         updatedAt: link.updatedAt,
       }
@@ -189,6 +193,7 @@ export class AnimeRepository extends Repository<Anime> {
       studios: saved.studios,
       rating: saved.rating,
       ranking: saved.ranking,
+      source_work_id: saved.source_work_id,
       createdAt: saved.createdAt,
       updatedAt: saved.updatedAt,
     }
@@ -230,6 +235,7 @@ ON t.title_en = duplicates.title_en
         studios: item.studios,
         rating: item.rating,
         ranking: item.ranking,
+        source_work_id: item.source_work_id,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       }
