@@ -17,6 +17,7 @@ import { AnimeCharacterEntity } from '../anime/repository/animeCharacters.entity
 import { SeasonYear, parseSeasonYear, Season } from '../common/season.types'
 import { WorkService } from '../work/work.service'
 import { cleanScrapedList } from '../common/scrapedList'
+import { readAdaptations, pickSourceAdaptation, AdaptationEntry } from './relatedEntries'
 import {
   readSidebar,
   rowText,
@@ -577,6 +578,9 @@ export class MyanimelistService {
       parsedData.title_en || parsedData.title_jp || 'Unknown',
     )
 
+    // Record which work this anime adapts, if the page says.
+    await this.captureSourceWork(page, upsertedAnime.id, res['source'])
+
     // Add season tracking if seasonYear is provided
     if (seasonYear && upsertedAnime.id) {
       try {
@@ -637,6 +641,61 @@ export class MyanimelistService {
     this.scrapeRecordService.recordSuccessfulScrape(data)
   }
 
+
+  /**
+   * Links an anime to the work it adapts.
+   *
+   * MAL states the source twice. The sidebar gives the kind -- "Manga", "Light
+   * novel" -- and Related Entries gives the actual entries, and for a light
+   * novel series both an Adaptation (Manga) and an Adaptation (Light Novel) are
+   * routinely listed. Spice & Wolf is the clear case: the anime adapts the
+   * novel, and the manga is a sibling adaptation of it. The sidebar's Source is
+   * what tells the two apart, so it is passed in rather than guessed at.
+   *
+   * When the work has not been scraped yet the URL is stored unresolved, which
+   * is the point of myanimelist_link carrying a record_id: the link survives,
+   * `scrape manga` can be pointed at it, and a later pass over the anime
+   * resolves it. Nothing is lost by not knowing yet.
+   */
+  private async captureSourceWork(
+    page: any,
+    animeId: string,
+    source: string | null,
+  ): Promise<void> {
+    if (!animeId) {
+      return
+    }
+
+    try {
+      const entries: AdaptationEntry[] = await page.evaluate(readAdaptations)
+      const picked: AdaptationEntry = pickSourceAdaptation(entries, source)
+      if (!picked) {
+        return
+      }
+
+      const link: string = picked.href.split('?')[0]
+      const resolved = await this.myanimelistlinkRepo.resolveByLink(link)
+
+      if (resolved && resolved.recordId) {
+        await this.animeService.setSourceWork(animeId, resolved.recordId)
+        this.logger.debug(`Linked anime ${animeId} to work ${resolved.recordId}`)
+
+        return
+      }
+
+      // Not scraped yet. Keep the URL so it can be, and so this resolves on a
+      // later pass instead of being rediscovered from scratch.
+      await this.myanimelistlinkRepo.upsert({
+        name: picked.title,
+        link,
+        type: RECORD_TYPE.Manga,
+      })
+      this.logger.debug(`Recorded unresolved source work ${link} for anime ${animeId}`)
+    } catch (e) {
+      // A missing source relation is not a reason to fail the anime scrape.
+      this.logger.warn(`Could not capture source work for anime ${animeId}: ${e.message}`)
+    }
+  }
 
   /**
    * Scrapes a MAL manga page into a `work` row.

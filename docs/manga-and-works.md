@@ -170,19 +170,22 @@ every re-adaptation case, which nothing else reaches.
 
 ## Steps
 
-Ordered. Nothing after step 1 is started.
+Ordered. Steps 1-6 are done and in main.
 
-1. **`myanimelist_link.record_id`** — written, committed on branch
-   `feat/work-table`, not yet raised as a pull request:
-   `migrations/1787184000000-GeneralizeMyanimelistLinkRecordId.ts`.
-   Adds `record_id`, backfills from `anime_id`, indexes `(link)` uniquely and
+1. **`myanimelist_link.record_id`** — done (#13).
+   `migrations/1787184000000-GeneralizeMyanimelistLinkRecordId.ts` adds
+   `record_id`, backfills from `anime_id`, indexes `(link)` uniquely and
    `(type, record_id)`. Leaves `anime_id` in place so the migration and the
-   code change can deploy independently; drop it in a follow-up.
+   code change can deploy independently; drop it in a follow-up. The unique
+   index needed a dedupe first: 486 links had duplicated because the upsert
+   matched on a title MAL rewrites freely.
 
-2. **Entity and repository** — `MyanimelistLinks.recordId`, and resolution
-   helpers that take a `RECORD_TYPE`.
+2. **Entity and repository** — done (#14). `MyanimelistLinks.recordId`, and
+   `resolveByLink` answering "given this MAL URL, what is our id and what kind
+   of record is it". `upsert` mirrors `animeId` into `recordId` so the column
+   keeps filling without any caller changing.
 
-3. **`work` table** in Postgres:
+3. **`work` table** in Postgres — done (#15):
 
    ```
    work(id, mal_id, type, title_en, title_jp, title_synonyms, synopsis,
@@ -199,16 +202,33 @@ Ordered. Nothing after step 1 is started.
    with 19 anime -- so normalising `authors` the way genres became `tags`
    is worth doing at creation rather than later.
 
-4. **`anime.source_work_id`** — nullable, indexed. One column covers the
-   overwhelming majority; an anime adapting several works is rare enough to
-   defer a link table.
+4. **`anime.source_work_id`** — done (#15). Nullable, indexed, no foreign key:
+   scrape order is not dependency order, and step 6 depends on being able to
+   record a relation before the other side exists.
 
-5. **Scraper: MAL manga pages.** Same Puppeteer cluster, session and captcha
-   handling as the anime path. Parse the sidebar labels listed above.
+5. **Scraper: MAL manga pages** — done (#16). `scrape manga`. Three things had
+   to be read off live pages rather than assumed: MAL pads the day
+   (`"Dec  22, 1995"`, two spaces) so `LLL d, yyyy` fails on it; manga synopses
+   are in `span[itemprop="description"]`, not the anime page's `p[itemprop]`;
+   and `Serialization` is the literal string `"None"` when absent. The sidebar
+   is read as anchors rather than text, because MAL writes authors surname
+   first -- `"Hasekura, Isuna (Story), Ayakura, Juu (Art)"` -- and splitting
+   that on commas halves every author, which is the bug already sitting in
+   `anime.studios`.
 
-6. **Scraper: capture the source link on anime pages.** Store the MAL URL
-   unresolved, resolve later via `myanimelist_link` — the same pattern that
-   makes relations recoverable.
+6. **Scraper: capture the source link on anime pages** — done. The
+   non-obvious part: MAL states the source twice and the two disagree. The
+   sidebar gives a kind, Related Entries gives entries, and a light novel
+   series lists **both** an `Adaptation (Manga)` and an
+   `Adaptation (Light Novel)`. Spice & Wolf's anime adapts the novel; the manga
+   is a sibling adaptation. Taking the first Adaptation records a relation that
+   is wrong, and wrong is worse than absent here. The sidebar's `Source` picks
+   between them, and an ambiguous page stores nothing.
+
+   Unresolved links are kept in `myanimelist_link` so `scrape manga` can be
+   pointed at them; the anime resolves on a later pass. There is no backfill
+   from the manga side -- nothing records which anime asked -- so resolution
+   happens when the anime is next scraped.
 
 7. **Read path** — ordinary. `work` is a table in the read store beside
    `anime`, so `anime.source_work_id` is a column and both directions are a

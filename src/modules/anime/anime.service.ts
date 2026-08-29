@@ -79,6 +79,17 @@ export class AnimeService {
     return upsertedAnime
   }
 
+  /**
+   * Points an anime at the work it adapts.
+   *
+   * A targeted update rather than an upsert: the anime row has just been
+   * written from the page, and re-upserting the whole record to set one column
+   * would emit a second CDC event for every field.
+   */
+  async setSourceWork(animeId: string, workId: string): Promise<void> {
+    await this.animeRepository.update({ id: animeId }, { source_work_id: workId })
+  }
+
   upsertAnimeEpisode(animeID: string, episode: AnimeEpisodesEntity) {
     return this.animeEpisodesRepository.upsert({
       ...episode,
