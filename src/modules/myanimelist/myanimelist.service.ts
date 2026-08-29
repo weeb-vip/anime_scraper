@@ -15,6 +15,18 @@ import { RECORD_TYPE } from './repository/interface'
 import { AnimeStaffEntity } from '../anime/repository/animeStaff.entity'
 import { AnimeCharacterEntity } from '../anime/repository/animeCharacters.entity'
 import { SeasonYear, parseSeasonYear, Season } from '../common/season.types'
+import { WorkService } from '../work/work.service'
+import { cleanScrapedList } from '../common/scrapedList'
+import {
+  readSidebar,
+  rowText,
+  rowList,
+  malNumber,
+  toWorkType,
+  malIdFromUrl,
+  parsePublished,
+  SidebarRow,
+} from './mangaPage'
 
 @Injectable()
 export class MyanimelistService {
@@ -45,6 +57,7 @@ export class MyanimelistService {
     private readonly myanimelistlinkRepo: MyanimelistlinkRepository,
     private readonly animeService: AnimeService,
     private readonly scrapeRecordService: ScrapeRecordService,
+    private readonly workService: WorkService,
   ) {
   }
 
@@ -624,6 +637,130 @@ export class MyanimelistService {
     this.scrapeRecordService.recordSuccessfulScrape(data)
   }
 
+
+  /**
+   * Scrapes a MAL manga page into a `work` row.
+   *
+   * The manga family -- manga, light novels, novels, manhwa, manhua, one-shots
+   * -- all live at /manga/<id> and differ only by the Type field, so this one
+   * path covers every source an anime can be adapted from that MAL knows about.
+   * That is roughly 10,300 anime: everything except originals and the game and
+   * visual novel sources, which need VNDB or IGDB.
+   *
+   * Same cluster, session and captcha handling as scrapeAnimePage. What differs
+   * is the sidebar, which is read as structure rather than text -- see
+   * mangaPage.ts for why splitting it on commas is not an option.
+   */
+  public async scrapeMangaPage({ page, data }: any): Promise<void> {
+    const url: string = data.url || data
+    this.logger.debug(`Scraping manga page ${url}`)
+
+    await page.setRequestInterception(true)
+    page.on('request', (request: any): void => {
+      if (request.url().endsWith('.js')) {
+        request.abort()
+      } else {
+        request.continue()
+      }
+    })
+    await page.setDefaultNavigationTimeout(5 * 60 * 1000)
+
+    const pageLoaded: boolean = await this.gotoWithTimeout(page, url)
+    if (!pageLoaded) {
+      this.logger.warn(`Continuing with partial page load for manga: ${url}`)
+    }
+    await this.handleCaptchas(page)
+
+    const rows: SidebarRow[] = await page.evaluate(readSidebar)
+
+    const titleHeader: string = await ClusterManager.pageFindOne(
+      page,
+      '.title-name.h1_bold_none',
+      'textContent',
+    )
+    const titleEn: string = rowText(rows, 'english') || titleHeader
+    const titleJp: string = rowText(rows, 'japanese')
+
+    // The same guard scrapeAnimePage uses: a page with neither title did not
+    // load properly, and retrying is better than writing an empty row.
+    if (!titleEn && !titleJp) {
+      throw new Error('No english or japanese title, should retry')
+    }
+
+    let imageUrl: string = await ClusterManager.pageFindOne(
+      page,
+      '.leftside img',
+      'src',
+    )
+    if (!imageUrl) {
+      imageUrl = await ClusterManager.pageFindOne(
+        page,
+        'meta[property="og:image"]',
+        'content',
+      )
+    }
+
+    const synopsis: string = await ClusterManager.pageFindOne(
+      page,
+      'span[itemprop="description"]',
+      'textContent',
+    )
+
+    const rankContent: string = await ClusterManager.pageFindOne(
+      page,
+      '.numbers.ranked strong',
+      'textContent',
+    )
+    const scoreLabel: string = await ClusterManager.pageFindOne(
+      page,
+      '.score .score-label',
+      'textContent',
+    )
+
+    const published = parsePublished(rowText(rows, 'published'), ParseDate, isValid)
+
+    const sanitizedURL: string = url.split('?')[0]
+
+    const work = await this.workService.upsertWork({
+      malId: malIdFromUrl(sanitizedURL),
+      type: toWorkType(rowText(rows, 'type')),
+      titleEn,
+      titleJp,
+      // Synonyms are the one list MAL leaves as plain comma-separated text.
+      titleSynonyms: cleanScrapedList(
+        (rowText(rows, 'synonyms') || '').split(','),
+      ),
+      synopsis,
+      imageUrl,
+      status: rowText(rows, 'status'),
+      volumes: malNumber(rowText(rows, 'volumes')),
+      chapters: malNumber(rowText(rows, 'chapters')),
+      publishedFrom: published.from,
+      publishedTo: published.to,
+      // Cleaned like the lists are: MAL writes an absent serialization as the
+      // literal "None", and demographic is simply missing on light novels.
+      demographic: cleanScrapedList(rowList(rows, 'demographic')).join(', ') || null,
+      serialization: cleanScrapedList(rowList(rows, 'serialization')).join(', ') || null,
+      authors: cleanScrapedList(rowList(rows, 'authors')),
+      score: malNumber(scoreLabel),
+      ranking: malNumber(rankContent),
+      members: malNumber(rowText(rows, 'members')),
+      favorites: malNumber(rowText(rows, 'favorites')),
+    })
+
+    // Record the URL against the work, so an anime page naming this manga can
+    // resolve it later. This is the same table the anime path uses; record_id
+    // is what lets it point at something that is not an anime.
+    await this.myanimelistlinkRepo.upsert({
+      name: titleEn || titleJp,
+      link: sanitizedURL,
+      type: RECORD_TYPE.Manga,
+      recordId: work.id,
+    })
+
+    this.scrapeRecordService.recordSuccessfulScrape(sanitizedURL)
+    this.logger.info(`Scraped manga ${titleEn || titleJp} (${work.id})`)
+  }
 
   public async scrapeCharactersAndStaff({ page, data }: any) {
     // When called from queue, data is the entire queued object
