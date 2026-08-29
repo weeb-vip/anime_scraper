@@ -5,6 +5,7 @@ import { Command, CommandRunner, Option } from 'nest-commander'
 import { Logger } from 'winston'
 import { ScraperService } from '../scraper/scraper.service'
 import { NewCommand } from './new.command'
+import { MangaCommand } from './manga.command'
 
 interface BasicCommandOptions {
   site: string
@@ -27,7 +28,7 @@ export const SCRAPE_DATA_TYPES = ['main', 'characters', 'episodes'] as const
   name: 'scrape',
   description: 'A parameter parse',
   // @ts-ignore
-  subCommands: [NewCommand],
+  subCommands: [NewCommand, MangaCommand],
 })
 export class ScraperCommand extends CommandRunner {
   constructor(

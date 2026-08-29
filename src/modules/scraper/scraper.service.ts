@@ -165,6 +165,73 @@ export class ScraperService {
     return 'ok'
   }
 
+  /**
+   * Scrapes MAL manga pages into `work` rows.
+   *
+   * URLs are supplied rather than generated. The natural source of them is the
+   * anime pages themselves -- step 6 records the source link each anime names --
+   * so a discovery crawl of MAL's manga index is not needed to get value out of
+   * this: the manga worth having are exactly the ones something adapts.
+   */
+  async scrapeMyAnimeListManga(
+    param: string[],
+    limit: number,
+    headless: boolean,
+    urls?: string[],
+  ) {
+    await this.puppeteerService.setup(limit, headless)
+
+    await this.puppeteerService
+      .getManager()
+      .task(
+        async ({ page, data }: any) =>
+          this.myanimelistService.scrapeMangaPage({ page, data }),
+      )
+
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+
+    let processUrls: string[] = urls && urls.length > 0 ? urls : param
+    if (!processUrls || processUrls.length === 0) {
+      this.logger.error(
+        'No manga URLs given. Pass them as arguments or with --file.',
+      )
+
+      return 'no urls'
+    }
+
+    // Same resume behaviour as the anime crawl: a run that dies partway through
+    // does not start from the beginning.
+    const alreadyScraped: Set<string> = this.scrapeRecordService.getScrapedUrls()
+    const beforeCount: number = processUrls.length
+    processUrls = processUrls.filter((url: string) => !alreadyScraped.has(url))
+    if (beforeCount !== processUrls.length) {
+      this.logger.info(
+        `Resuming: skipping ${beforeCount - processUrls.length} already-scraped URLs, ${processUrls.length} remaining`,
+      )
+    }
+
+    await Promise.all(
+      processUrls.map((url: string) =>
+        this.puppeteerService.getManager().queue({ url, type: 'manga' }),
+      ),
+    )
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    return 'ok'
+  }
+
   async scrapeNewlyAdded(
     param: string[],
     limit: number,
