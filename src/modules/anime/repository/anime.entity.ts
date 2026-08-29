@@ -137,6 +137,15 @@ export class Anime {
   @Column({ name: 'ranking', nullable: true })
   ranking: number
 
+  // The work this anime adapts, when we know it. Null is the normal state: two
+  // thirds of the catalogue is either original or from a source MAL's manga
+  // database does not cover, and a relation to a work not yet scraped is held
+  // unresolved in myanimelist_link until the other side arrives.
+  //
+  // No foreign key -- scrape order is not dependency order. See the migration.
+  @Column({ name: 'source_work_id', nullable: true, type: 'uuid' })
+  source_work_id: string
+
   @OneToMany(() => AnimeSeasonEntity, animeSeason => animeSeason.anime)
   seasons: AnimeSeasonEntity[]
 
