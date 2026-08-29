@@ -41,6 +41,12 @@ export class Work {
   @Column({ name: 'type', enum: WORK_TYPE, default: WORK_TYPE.Manga })
   type: WORK_TYPE
 
+  // Assigned by a postgres trigger on insert and never rewritten afterwards,
+  // because it is a public URL. Leave it undefined when saving; setting it to
+  // null asks the trigger to mint a fresh one.
+  @Column({ name: 'url_slug', nullable: true })
+  urlSlug: string
+
   @Column({ name: 'title_en', nullable: true })
   titleEn: string
 
