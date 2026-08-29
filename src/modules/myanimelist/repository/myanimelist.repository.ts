@@ -50,14 +50,25 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
       body,
       nullFields,
     ) as MyanimelistLinks
+    // Match on the link first.
+    //
+    // This matched on name+type first and fell back to the link, which made a
+    // retitled entry a new row rather than an update: MAL lists the same URL as
+    // "Kikou Ryouhei Merowlink", "Kikou Ryouhei Mellowlink" and "Armor Hunter
+    // Mellowlink", and production ended up with all three. 485 links were
+    // duplicated that way across 971 rows, and 399 of those rows never resolved
+    // to an anime.
+    //
+    // The link is the identity here -- one MAL URL is one record, which is what
+    // the unique index added alongside this asserts. The name is a label on it
+    // and changes freely.
     // eslint-disable-next-line
     let savedLink: MyanimelistLinks = await this.findOne({
-      name: cleanBody.name,
-      type: cleanBody.type,
+      where: { link: cleanBody.link },
     })
     if (!savedLink) {
       savedLink = await this.findOne({
-        where: { link: cleanBody.link },
+        where: { name: cleanBody.name, type: cleanBody.type },
       })
     }
 
