@@ -24,6 +24,14 @@ export class MyanimelistLinks {
   @Column({ name: 'anime_id', nullable: true, type: 'varchar', length: 36 })
   animeId: string
 
+  // What this link points at, whatever kind of record that is. `type` says
+  // which table to read it from; together they are the resolution key.
+  //
+  // anime_id stays for now so this column and the code that fills it can deploy
+  // separately. It is the one to drop once nothing reads it.
+  @Column({ name: 'record_id', nullable: true, type: 'varchar', length: 36 })
+  recordId: string
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 

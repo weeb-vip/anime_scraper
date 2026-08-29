@@ -4,6 +4,10 @@ export interface IMyanimelist {
   readonly name: string
   readonly link: string
   readonly animeId: string
+  // The generic target. animeId is kept beside it until the column is dropped,
+  // so a deploy of this code and the migration that fills record_id do not have
+  // to happen together.
+  readonly recordId: string
   readonly updatedAt: Date
 }
 
