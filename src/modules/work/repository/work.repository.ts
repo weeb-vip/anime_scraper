@@ -12,6 +12,7 @@ export class WorkRepository extends Repository<Work> {
           id: work.id,
           malId: work.malId,
           type: work.type,
+          urlSlug: work.urlSlug,
           titleEn: work.titleEn,
           titleJp: work.titleJp,
           titleSynonyms: work.titleSynonyms,

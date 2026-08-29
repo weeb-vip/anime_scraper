@@ -22,6 +22,7 @@ export interface IWork {
   readonly id: string
   readonly malId: number
   readonly type: WORK_TYPE
+  readonly urlSlug: string
   readonly titleEn: string
   readonly titleJp: string
   readonly titleSynonyms: string[]
