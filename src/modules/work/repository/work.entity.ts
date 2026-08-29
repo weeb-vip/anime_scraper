@@ -88,7 +88,10 @@ export class Work {
   @Column('text', { name: 'authors', nullable: true, transformer: jsonArray })
   authors: string[]
 
-  @Column({ name: 'score', nullable: true, type: 'numeric', precision: 4, scale: 2 })
+  // double precision, not numeric. Debezium encodes numeric columns as base64
+  // bytes under its default decimal.handling.mode, which a float consumer
+  // cannot read -- see migration 1787360400000.
+  @Column({ name: 'score', nullable: true, type: 'double precision' })
   score: number
 
   @Column({ name: 'ranking', nullable: true, type: 'int' })
