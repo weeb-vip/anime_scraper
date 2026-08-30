@@ -10,11 +10,6 @@ interface MangaCommandOptions {
   limit?: number
   headless?: boolean
   file?: string
-  // The prefixed spellings this command used to require, kept working so the
-  // scrape jobs and scripts already written against them do not break.
-  msite?: string
-  mlimit?: number
-  mheadless?: boolean
 }
 
 // `scrape manga` -- the manga, light novels and novels anime are adapted from.
@@ -52,8 +47,7 @@ export class MangaCommand extends CommandRunner {
       urls = JSON.parse(contents)
     }
 
-    // The plain spelling wins, the prefixed one is the fallback.
-    const site: string = options?.site || options?.msite || 'myanimelist'
+    const site: string = options?.site || 'myanimelist'
     if (site !== 'myanimelist') {
       this.logger.error(`Site ${site} has no manga pages to scrape`)
 
@@ -62,8 +56,8 @@ export class MangaCommand extends CommandRunner {
 
     await this.scapperService.scrapeMyAnimeListManga(
       passedParam,
-      options?.limit ?? options?.mlimit,
-      !!(options?.headless || options?.mheadless),
+      options?.limit,
+      !!options?.headless,
       urls,
     )
   }
@@ -85,15 +79,17 @@ export class MangaCommand extends CommandRunner {
     return val
   }
 
-  // The plain names, which only became available once options started belonging
-  // to the command they follow. The prefixed spellings below are kept as
-  // aliases: the scrape jobs in the cluster pass --msite and --mheadless, and
-  // renaming an option is not worth breaking a running backfill over.
+  // Plain names, matching the parent command's. They only became possible once
+  // options started belonging to the command they follow -- before that the
+  // parent claimed them, which is why this command used to be stuck with
+  // --msite, --mlimit and --mheadless.
+  //
+  // No short aliases. -s and -l would read as the parent's, and -h is help.
   @Option({
     flags: '--site [site]',
     description: 'What site to scrape (only myanimelist)',
   })
-  getPlainSite(val: string): string {
+  getSite(val: string): string {
     return val
   }
 
@@ -101,37 +97,13 @@ export class MangaCommand extends CommandRunner {
     flags: '--limit [limit]',
     description: 'How many pages to scrape concurrently',
   })
-  getPlainLimit(val: string): number {
+  getLimit(val: string): number {
     return parseInt(val, 10)
   }
 
   @Option({
     flags: '--headless',
     description: 'Run headless',
-  })
-  getPlainHeadless(): boolean {
-    return true
-  }
-
-  @Option({
-    flags: '-ms, --msite [site]',
-    description: 'Deprecated alias for --site',
-  })
-  getSite(val: string): string {
-    return val
-  }
-
-  @Option({
-    flags: '-ml, --mlimit [limit]',
-    description: 'Deprecated alias for --limit',
-  })
-  getLimit(val: string): number {
-    return parseInt(val, 10)
-  }
-
-  @Option({
-    flags: '-mh, --mheadless',
-    description: 'Deprecated alias for --headless',
   })
   getHeadless(): boolean {
     return true
