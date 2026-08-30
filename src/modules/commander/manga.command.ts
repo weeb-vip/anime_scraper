@@ -6,17 +6,21 @@ import { Logger } from 'winston'
 import { ScraperService } from '../scraper/scraper.service'
 
 interface MangaCommandOptions {
-  msite: string
-  mlimit?: number
-  mheadless?: boolean
+  site?: string
+  limit?: number
+  headless?: boolean
   file?: string
 }
 
 // `scrape manga` -- the manga, light novels and novels anime are adapted from.
 //
-// URLs are given rather than discovered. MAL's manga database is far larger
-// than the part of it we care about, and the part we care about is defined by
-// what something adapts, which the anime pages already tell us.
+// Run with no arguments it scrapes every manga link the catalogue has recorded,
+// mirroring how `scrape` works for anime. MAL's manga database is far larger
+// than the part we care about, and that part is defined by what something
+// adapts -- which the anime pages already tell us, so there is nothing to
+// discover and no index to crawl.
+//
+// Arguments or --file narrow it to a specific set instead.
 @SubCommand({
   name: 'manga',
   description: 'Scrape MyAnimeList manga pages into works',
@@ -43,7 +47,7 @@ export class MangaCommand extends CommandRunner {
       urls = JSON.parse(contents)
     }
 
-    const site: string = options?.msite || 'myanimelist'
+    const site: string = options?.site || 'myanimelist'
     if (site !== 'myanimelist') {
       this.logger.error(`Site ${site} has no manga pages to scrape`)
 
@@ -52,17 +56,21 @@ export class MangaCommand extends CommandRunner {
 
     await this.scapperService.scrapeMyAnimeListManga(
       passedParam,
-      options?.mlimit,
-      !!options?.mheadless,
+      options?.limit,
+      !!options?.headless,
       urls,
     )
   }
 
   // Declared, not just read. nest-commander only populates options that have
   // an @Option; the field existing on the options interface is not enough, and
-  // TypeScript cannot see the difference. Without this, --file parsed on the
-  // parent command, never reached here, and every run ended with "No manga URLs
-  // given" while appearing to have been passed a file.
+  // TypeScript cannot see the difference.
+  //
+  // Declaring it was necessary but not sufficient: the parent `scrape` command
+  // also owns -f, --file, and until positional options were enabled commander
+  // matched the parent's option anywhere on the line. So --file went to the
+  // parent regardless of this decorator, and every run ended with "No manga
+  // URLs given" while appearing to have been passed a file.
   @Option({
     flags: '--file [file]',
     description: 'JSON file holding an array of MyAnimeList manga URLs',
@@ -71,8 +79,14 @@ export class MangaCommand extends CommandRunner {
     return val
   }
 
+  // Plain names, matching the parent command's. They only became possible once
+  // options started belonging to the command they follow -- before that the
+  // parent claimed them, which is why this command used to be stuck with
+  // --msite, --mlimit and --mheadless.
+  //
+  // No short aliases. -s and -l would read as the parent's, and -h is help.
   @Option({
-    flags: '-ms, --msite [site]',
+    flags: '--site [site]',
     description: 'What site to scrape (only myanimelist)',
   })
   getSite(val: string): string {
@@ -80,7 +94,7 @@ export class MangaCommand extends CommandRunner {
   }
 
   @Option({
-    flags: '-ml, --mlimit [limit]',
+    flags: '--limit [limit]',
     description: 'How many pages to scrape concurrently',
   })
   getLimit(val: string): number {
@@ -88,7 +102,7 @@ export class MangaCommand extends CommandRunner {
   }
 
   @Option({
-    flags: '-mh, --mheadless',
+    flags: '--headless',
     description: 'Run headless',
   })
   getHeadless(): boolean {
