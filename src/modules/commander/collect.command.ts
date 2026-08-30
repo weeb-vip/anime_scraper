@@ -1,4 +1,5 @@
 import { Command, CommandRunner, Option } from 'nest-commander'
+import { CollectMangaCommand } from './collect-manga.command'
 import { Logger } from 'winston'
 import { Inject } from '@nestjs/common'
 import { ScraperService } from '../scraper/scraper.service'
@@ -9,7 +10,11 @@ interface BasicCommandOptions {
   headless?: boolean
 }
 
-@Command({ name: 'collect', description: 'A parameter parse' })
+@Command({
+  name: 'collect',
+  description: 'Collect links to scrape later',
+  subCommands: [CollectMangaCommand],
+})
 export class CollectCommand extends CommandRunner {
   constructor(
     @Inject('winston')

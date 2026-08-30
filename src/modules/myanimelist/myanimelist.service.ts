@@ -45,6 +45,15 @@ export class MyanimelistService {
       limit: 0,
     },
   }
+  // The manga ranking, which is the same table as /topanime.php. Its params are
+  // built per page rather than mutated in place, so generating the list twice
+  // in one process does not start where the last run left off.
+  mangaRequest: IAnimeRequest = {
+    basePath: '/topmanga.php',
+    params: {
+      limit: 0,
+    },
+  }
 
   // Which pieces of data to scrape. `main` (anime metadata + seasons) is always
   // the anchor; `characters` and `episodes` are the expensive extra crawls that
@@ -75,7 +84,36 @@ export class MyanimelistService {
    * @param data
    */
   async collectAnime({ page, data }: any) {
-    this.logger.debug(`Collecting anime on page ${data}`)
+    return this.collectRankingPage(page, data, RECORD_TYPE.Anime)
+  }
+
+  /**
+   * Collects manga from MyAnimeList's ranking pages.
+   *
+   * The counterpart to collectAnime, and the only way to reach a manga nothing
+   * adapts. Manga that anime are based on arrive on their own -- the anime
+   * scrape records each source as it goes -- but that reaches roughly ten
+   * thousand of MAL's sixty thousand. The rest have to be discovered, and
+   * /topmanga.php is the same ranking table as /topanime.php, so the crawl is
+   * identical down to the selector.
+   */
+  async collectManga({ page, data }: any) {
+    return this.collectRankingPage(page, data, RECORD_TYPE.Manga)
+  }
+
+  /**
+   * One page of a MAL ranking table, recorded as links of the given type.
+   *
+   * Shared because /topanime.php and /topmanga.php are the same page with
+   * different rows: same ranking-list markup, same captcha interstitial, same
+   * fifty entries. Only the record type written at the end differs.
+   */
+  private async collectRankingPage(
+    page: any,
+    data: any,
+    recordType: RECORD_TYPE,
+  ) {
+    this.logger.debug(`Collecting ${recordType} on page ${data}`)
     const url: string = data
     // await page.setRequestInterception(true)
     /*page.on('request', (request: any): void => {
@@ -134,7 +172,7 @@ export class MyanimelistService {
         return this.myanimelistlinkRepo.upsert({
           name: link.name,
           link: link.url,
-          type: RECORD_TYPE.Anime,
+          type: recordType,
         })
       }),
     )
@@ -217,6 +255,30 @@ export class MyanimelistService {
       return `${this.baseURL}${basePath}?${QueryString.stringify(params)}`
     })
     return urls
+  }
+
+  /**
+   * Ranking pages for the manga crawl, fifty entries each.
+   *
+   * Paged rather than fixed at 500 like the anime list because the two
+   * catalogues are not the same size, and getting this wrong is silent: the
+   * crawl simply stops early and the manga past that point look like they do
+   * not exist.
+   *
+   * 1700 covers the ranking with room to spare. Measured against MAL rather
+   * than guessed -- ?limit=80000 still returns a full page of fifty and
+   * ?limit=90000 returns nothing, so the tail sits between the two and 85,000
+   * clears it. Pages past the end return no rows and record nothing, which
+   * costs a page load and breaks nothing.
+   *
+   * A smaller number takes the popular end without crawling the tail.
+   */
+  generateMangaListURLs(pages = 1700): string[] {
+    const { basePath } = this.mangaRequest
+
+    return new Array(pages).fill(0).map(
+      (_, i: number) => `${this.baseURL}${basePath}?${QueryString.stringify({ limit: i * 50 })}`,
+    )
   }
 
   async generateNewlyAddedURLs(): Promise<string[]> {

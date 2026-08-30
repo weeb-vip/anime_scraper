@@ -90,6 +90,52 @@ export class ScraperService {
     return 'ok'
   }
 
+  /**
+   * Walks MAL's manga ranking and records what it finds as manga links.
+   *
+   * The discovery half of the manga pipeline. Manga that something adapts do
+   * not need this -- the anime scrape records those as it goes -- so this
+   * exists for the rest: the roughly fifty thousand MAL entries no anime was
+   * ever made from, which nothing in the anime catalogue can point at.
+   *
+   * `scrape manga` reads whatever ends up in the table, so running this first
+   * simply widens what that scrape covers.
+   */
+  async collectMyanimelistManga(
+    param: string[],
+    limit: number,
+    headless: boolean,
+    pages?: number,
+  ) {
+    await this.puppeteerService.setup(limit, headless)
+    await this.puppeteerService
+      .getManager()
+      .task(this.myanimelistService.collectManga.bind(this.myanimelistService))
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+
+    const urls: string[] = this.myanimelistService.generateMangaListURLs(pages)
+    this.logger.info(`Collecting manga from ${urls.length} ranking pages`)
+
+    await Promise.all(
+      urls.map((url: string) => this.puppeteerService.getManager().queue(url)),
+    )
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    return 'ok'
+  }
+
   async scrapeMyAnimeList(
     param: string[],
     limit: number,
