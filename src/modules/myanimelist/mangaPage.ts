@@ -13,6 +13,13 @@ export interface SidebarRow {
   readonly label: string
   readonly text: string
   readonly links: string[]
+  // The hrefs behind those same anchors, in the same order.
+  //
+  // MyAnimeList links every author to /people/<id>, which is the only durable
+  // identifier a person has -- names are romanised inconsistently and get
+  // rewritten. Keeping only the text throws that away, and recovering it later
+  // means re-scraping every manga page rather than reading a column.
+  readonly hrefs: string[]
 }
 
 // Runs in the page. Returns one entry per sidebar row.
@@ -32,8 +39,16 @@ export function readSidebar(): SidebarRow[] {
       label,
       text: (row.textContent || '').replace(span?.textContent || '', '').trim(),
       links: anchors.map((a: Element) => (a.textContent || '').trim()),
+      hrefs: anchors.map((a: Element) => (a as HTMLAnchorElement).href || ''),
     }
   })
+}
+
+/** The anchor hrefs on a row, paired with the text rowList returns. */
+export function rowHrefs(rows: SidebarRow[], label: string): string[] {
+  const row: SidebarRow = rows.find((r: SidebarRow) => r.label === label)
+
+  return row ? row.hrefs : []
 }
 
 export function rowText(rows: SidebarRow[], label: string): string | null {
