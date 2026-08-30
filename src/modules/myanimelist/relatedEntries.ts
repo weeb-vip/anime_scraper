@@ -21,6 +21,10 @@ export interface AdaptationEntry {
   readonly kind: string
   readonly href: string
   readonly title: string
+  // Which side of MAL the entry points at. The same Related Entries block
+  // appears on both anime and manga pages and links to both kinds, so callers
+  // have to say which they want rather than assuming the page decides.
+  readonly recordType: 'anime' | 'manga'
 }
 
 // Runs in the page.
@@ -31,16 +35,24 @@ export function readAdaptations(): AdaptationEntry[] {
   const found: AdaptationEntry[] = []
 
   const push = (relation: string, href: string | null, title: string): void => {
-    if (!href || !/\/manga\/\d+/.test(href)) {
+    if (!href) {
       return
     }
-    // "Adaptation (Light Novel)" -> kind "Light Novel"
+    const isManga: boolean = /\/manga\/\d+/.test(href)
+    const isAnime: boolean = /\/anime\/\d+/.test(href)
+    if (!isManga && !isAnime) {
+      return
+    }
+    // "Adaptation (Light Novel)" -> kind "Light Novel". On a manga page the
+    // parenthetical is the anime's media type instead -- "(TV)", "(OVA)" -- so
+    // kind only means "what was adapted" for manga entries.
     const match: RegExpMatchArray | null = relation.match(/\(([^)]+)\)/)
     found.push({
       relation,
       kind: match ? match[1] : '',
       href,
       title,
+      recordType: isManga ? 'manga' : 'anime',
     })
   }
 
@@ -93,8 +105,12 @@ export function pickSourceAdaptation(
   entries: readonly AdaptationEntry[],
   source: string | null,
 ): AdaptationEntry | null {
-  const adaptations: AdaptationEntry[] = entries.filter((entry: AdaptationEntry) =>
-    /adaptation/i.test(entry.relation),
+  // Manga entries only. readAdaptations now returns both kinds, and this
+  // function answers "what was this anime adapted from" -- an anime entry is
+  // never an answer to that.
+  const adaptations: AdaptationEntry[] = entries.filter(
+    (entry: AdaptationEntry) =>
+      entry.recordType === 'manga' && /adaptation/i.test(entry.relation),
   )
 
   // MAL lists the same entry in both layouts, so the same href arrives twice.
@@ -123,4 +139,108 @@ export function pickSourceAdaptation(
 
   // One candidate and nothing to contradict it.
   return unique.length === 1 ? unique[0] : null
+}
+
+/**
+ * Every anime the manga page relates to by adaptation.
+ *
+ * The reverse of pickSourceAdaptation, and deliberately not a "pick": a work
+ * can be adapted many times and all of them are real -- Hellsing lists both the
+ * 2001 TV series and Ultimate. Returning all of them is the point, since
+ * relating re-adaptations to each other is why works are modelled at all.
+ *
+ * Unlike the anime side this cannot decide on its own whether a relation is
+ * true. MAL's "Adaptation" is symmetric and says only that two entries are
+ * related by an adaptation somewhere in the chain, not that this anime adapts
+ * this work. The Spice & Wolf manga page lists five anime that all adapt the
+ * light novel it was itself adapted from. So these are candidates, and
+ * sourceMatchesWorkType is what turns a candidate into a link.
+ */
+export function pickAnimeAdaptations(
+  entries: readonly AdaptationEntry[],
+): AdaptationEntry[] {
+  const adaptations: AdaptationEntry[] = entries.filter(
+    (entry: AdaptationEntry) =>
+      entry.recordType === 'anime' && /adaptation/i.test(entry.relation),
+  )
+
+  // MAL lists the same entry in both layouts, so the same href arrives twice.
+  const seen: Set<string> = new Set()
+
+  return adaptations.filter((entry: AdaptationEntry) => {
+    if (seen.has(entry.href)) {
+      return false
+    }
+    seen.add(entry.href)
+
+    return true
+  })
+}
+
+/**
+ * Folds MAL's many spellings into the family of source they describe.
+ *
+ * MAL writes the same idea differently on either side: a manga page's Type says
+ * "Manga" or "Light Novel", while an anime's Source says "Manga", "Web manga",
+ * "4-koma manga", "Light novel". Comparing the raw strings links almost
+ * nothing.
+ *
+ * The order of these tests matters. "Light novel" and "Web novel" both contain
+ * "novel", so they have to be recognised before the plain novel case or every
+ * light novel would fold to `novel` and match the wrong works -- which is
+ * exactly the Spice & Wolf confusion this whole guard exists to prevent.
+ */
+function family(value: string): string {
+  const folded: string = fold(value)
+
+  if (folded.includes('lightnovel')) {
+    return 'lightnovel'
+  }
+  if (folded.includes('webnovel')) {
+    return 'webnovel'
+  }
+  if (folded.includes('visualnovel')) {
+    return 'visualnovel'
+  }
+  if (folded.includes('novel') || folded === 'book') {
+    return 'novel'
+  }
+  // Manhwa, manhua and OEL have no matching MAL source value -- an anime drawn
+  // from any of them reports "Manga" -- so they fold together with it. One-shots
+  // and doujinshi are the same story.
+  if (
+    folded.includes('manga') ||
+    folded === 'manhwa' ||
+    folded === 'manhua' ||
+    folded === 'oel' ||
+    folded === 'oneshot' ||
+    folded === 'doujinshi'
+  ) {
+    return 'manga'
+  }
+
+  return folded
+}
+
+/**
+ * Whether an anime's recorded Source is consistent with this work's Type.
+ *
+ * The guard on linking from the manga side. An anime whose Source is "Light
+ * novel" is not adapted from a manga, however prominently the manga page lists
+ * it, so a mismatch means no link rather than a guess.
+ *
+ * Returns false when either side is missing. An anime with no Source recorded
+ * cannot be checked, and an unverified link is worse than an absent one: a null
+ * source_work_id is fixed by the next scrape, a wrong one silently relates two
+ * unrelated series and nothing ever revisits it.
+ */
+export function sourceMatchesWorkType(
+  animeSource: string | null | undefined,
+  workType: string | null | undefined,
+): boolean {
+  if (!animeSource || !workType) {
+    return false
+  }
+
+  return family(animeSource) === family(workType)
 }

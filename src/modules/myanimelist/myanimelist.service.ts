@@ -17,7 +17,13 @@ import { AnimeCharacterEntity } from '../anime/repository/animeCharacters.entity
 import { SeasonYear, parseSeasonYear, Season } from '../common/season.types'
 import { WorkService } from '../work/work.service'
 import { cleanScrapedList } from '../common/scrapedList'
-import { readAdaptations, pickSourceAdaptation, AdaptationEntry } from './relatedEntries'
+import {
+  readAdaptations,
+  pickSourceAdaptation,
+  pickAnimeAdaptations,
+  sourceMatchesWorkType,
+  AdaptationEntry,
+} from './relatedEntries'
 import {
   readSidebar,
   rowHrefs,
@@ -860,8 +866,63 @@ export class MyanimelistService {
 
     await this.recordAuthorLinks(rows, work.id)
 
+    await this.linkAdaptedAnime(page, work.id, rowText(rows, 'type'))
+
     this.scrapeRecordService.recordSuccessfulScrape(sanitizedURL)
     this.logger.info(`Scraped manga ${titleEn || titleJp} (${work.id})`)
+  }
+
+  /**
+   * Points the anime this work was adapted into back at it.
+   *
+   * The same relation the anime scrape captures, read from the other end. It
+   * matters because the two ends are not equally available: the catalogue holds
+   * every anime long before it holds the manga, so at the moment a work is
+   * first scraped its anime are already here waiting to be linked. Without
+   * this, setting source_work_id needs a second full pass over 29,000 anime to
+   * pick up what one manga page already stated.
+   *
+   * Every link is checked against the anime's own Source before it is written.
+   * MAL's "Adaptation" is symmetric -- the Spice & Wolf manga page lists five
+   * anime, all of which adapt the light novel that manga came from, not the
+   * manga -- so the page alone cannot distinguish a real adaptation from a
+   * sibling. The anime's Source can, and an anime whose Source contradicts this
+   * work is skipped rather than guessed at.
+   */
+  private async linkAdaptedAnime(
+    page: any,
+    workId: string,
+    workType: string | null,
+  ): Promise<void> {
+    try {
+      const entries: AdaptationEntry[] = await page.evaluate(readAdaptations)
+      const candidates: AdaptationEntry[] = pickAnimeAdaptations(entries)
+
+      for (const candidate of candidates) {
+        const link: string = candidate.href.split('?')[0]
+        const resolved = await this.myanimelistlinkRepo.resolveByLink(link)
+        if (!resolved || !resolved.recordId) {
+          // The anime is not in the catalogue yet. Nothing to record here: the
+          // anime scrape stores its own link when it gets there, and resolves
+          // this relation from its side.
+          continue
+        }
+
+        const source: string = await this.animeService.getSource(resolved.recordId)
+        if (!sourceMatchesWorkType(source, workType)) {
+          this.logger.debug(
+            `Skipping ${link}: source ${source || 'unknown'} does not match work type ${workType}`,
+          )
+          continue
+        }
+
+        await this.animeService.setSourceWork(resolved.recordId, workId)
+        this.logger.debug(`Linked anime ${resolved.recordId} to work ${workId}`)
+      }
+    } catch (e) {
+      // Losing the back-link is not a reason to lose the work that was scraped.
+      this.logger.warn(`Could not link adapted anime for work ${workId}: ${e.message}`)
+    }
   }
 
   public async scrapeCharactersAndStaff({ page, data }: any) {
