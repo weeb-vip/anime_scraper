@@ -20,6 +20,7 @@ import { cleanScrapedList } from '../common/scrapedList'
 import { readAdaptations, pickSourceAdaptation, AdaptationEntry } from './relatedEntries'
 import {
   readSidebar,
+  rowHrefs,
   rowText,
   rowList,
   malNumber,
@@ -643,6 +644,46 @@ export class MyanimelistService {
 
 
   /**
+   * Records each author's MyAnimeList page against their name.
+   *
+   * Stored unresolved, the same way a source work is: the URL is kept now and
+   * turned into one of our ids whenever that person is scraped. MyAnimeList
+   * serves authors from /people/<id>, the same namespace as the voice actors
+   * this scraper already collects, so an author is not a new kind of record --
+   * it is a person we have a link to and have not fetched yet.
+   *
+   * Worth keeping even before anything reads it. A name is not an identity:
+   * MyAnimeList romanises inconsistently and rewrites entries, which is exactly
+   * how myanimelist_link accumulated 486 duplicates keyed on titles. The id in
+   * the URL is stable, and recovering it later would mean re-scraping every
+   * manga page rather than reading a column.
+   */
+  private async recordAuthorLinks(rows: SidebarRow[], workId: string): Promise<void> {
+    const names: string[] = rowList(rows, 'authors')
+    const hrefs: string[] = rowHrefs(rows, 'authors')
+
+    for (let i = 0; i < hrefs.length; i++) {
+      const href: string = (hrefs[i] || '').split('?')[0]
+      // Only people links. The row can carry others, and a link we cannot key
+      // on is worse than no link at all.
+      if (!/\/people\/\d+/.test(href)) {
+        continue
+      }
+
+      try {
+        await this.myanimelistlinkRepo.upsert({
+          name: names[i] || href,
+          link: href,
+          type: RECORD_TYPE.Staff,
+        })
+      } catch (e) {
+        // One unrecordable author is not a reason to fail a scraped work.
+        this.logger.warn(`Could not record author link ${href} for work ${workId}: ${e.message}`)
+      }
+    }
+  }
+
+  /**
    * Links an anime to the work it adapts.
    *
    * MAL states the source twice. The sidebar gives the kind -- "Manga", "Light
@@ -816,6 +857,8 @@ export class MyanimelistService {
       type: RECORD_TYPE.Manga,
       recordId: work.id,
     })
+
+    await this.recordAuthorLinks(rows, work.id)
 
     this.scrapeRecordService.recordSuccessfulScrape(sanitizedURL)
     this.logger.info(`Scraped manga ${titleEn || titleJp} (${work.id})`)
