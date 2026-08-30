@@ -14,9 +14,13 @@ interface MangaCommandOptions {
 
 // `scrape manga` -- the manga, light novels and novels anime are adapted from.
 //
-// URLs are given rather than discovered. MAL's manga database is far larger
-// than the part of it we care about, and the part we care about is defined by
-// what something adapts, which the anime pages already tell us.
+// Run with no arguments it scrapes every manga link the catalogue has recorded,
+// mirroring how `scrape` works for anime. MAL's manga database is far larger
+// than the part we care about, and that part is defined by what something
+// adapts -- which the anime pages already tell us, so there is nothing to
+// discover and no index to crawl.
+//
+// Arguments or --file narrow it to a specific set instead.
 @SubCommand({
   name: 'manga',
   description: 'Scrape MyAnimeList manga pages into works',

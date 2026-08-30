@@ -251,6 +251,22 @@ export class MyanimelistService {
     )
   }
 
+  /**
+   * Every manga URL the catalogue knows it wants.
+   *
+   * The manga counterpart of generateAnimeURLs, and the reason `scrape manga`
+   * needs no discovery crawl and no file. Anime links are gathered by `collect`
+   * walking MAL's index; manga links arrive on their own, because
+   * captureSourceWork records the source each anime names while the anime is
+   * being scraped. The list is therefore already exactly the manga something
+   * adapts, which is the only part of MAL's 60,000+ manga worth having.
+   */
+  async generateMangaURLs(): Promise<string[]> {
+    return (await this.myanimelistlinkRepo.findAllByType(RECORD_TYPE.Manga)).map(
+      (IMyanimelist) => IMyanimelist.link,
+    )
+  }
+
   generateSeasonalURL(seasonYear: SeasonYear): string {
     const { season, year } = parseSeasonYear(seasonYear)
     return `${this.baseURL}/anime/season/${year}/${season}`

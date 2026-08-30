@@ -168,10 +168,13 @@ export class ScraperService {
   /**
    * Scrapes MAL manga pages into `work` rows.
    *
-   * URLs are supplied rather than generated. The natural source of them is the
-   * anime pages themselves -- step 6 records the source link each anime names --
-   * so a discovery crawl of MAL's manga index is not needed to get value out of
-   * this: the manga worth having are exactly the ones something adapts.
+   * With no URLs given this reads them from `myanimelist_link`, the same way
+   * the anime crawl reads its own. The manga side needs no `collect` step to
+   * fill that table: the anime scrape records the source each anime names as it
+   * goes, so the list builds itself and contains exactly the manga something
+   * adapts -- the only part of MAL's 60,000+ manga worth scraping.
+   *
+   * Explicit URLs, as arguments or via --file, override it for a targeted run.
    */
   async scrapeMyAnimeListManga(
     param: string[],
@@ -203,8 +206,19 @@ export class ScraperService {
 
     let processUrls: string[] = urls && urls.length > 0 ? urls : param
     if (!processUrls || processUrls.length === 0) {
+      // The same strategy as the anime crawl: given nothing, scrape what the
+      // catalogue already knows it wants. No discovery pass is needed to get
+      // that list -- the anime scrape records the source each anime names as it
+      // goes, so the manga worth having accumulate on their own.
+      processUrls = await this.myanimelistService.generateMangaURLs()
+      this.logger.info(
+        `No URLs given, using ${processUrls.length} manga links recorded from anime pages`,
+      )
+    }
+
+    if (processUrls.length === 0) {
       this.logger.error(
-        'No manga URLs given. Pass them as arguments or with --file.',
+        'No manga URLs given, and none have been recorded yet. Run the anime scrape first so it can collect them, or pass URLs as arguments or with --file.',
       )
 
       return 'no urls'
