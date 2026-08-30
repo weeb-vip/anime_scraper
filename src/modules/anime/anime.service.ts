@@ -90,6 +90,24 @@ export class AnimeService {
     await this.animeRepository.update({ id: animeId }, { source_work_id: workId })
   }
 
+  /**
+   * What MAL says this anime was adapted from -- "Manga", "Light novel",
+   * "Original".
+   *
+   * Read on its own rather than through a full entity because the manga scrape
+   * asks this once per related anime purely to decide whether a link is
+   * plausible, and loading whole anime rows to read one column is a lot of
+   * traffic for a question answered by a string.
+   */
+  async getSource(animeId: string): Promise<string | null> {
+    const anime = await this.animeRepository.findOne({
+      where: { id: animeId },
+      select: ['id', 'source'],
+    })
+
+    return anime?.source ?? null
+  }
+
   upsertAnimeEpisode(animeID: string, episode: AnimeEpisodesEntity) {
     return this.animeEpisodesRepository.upsert({
       ...episode,
