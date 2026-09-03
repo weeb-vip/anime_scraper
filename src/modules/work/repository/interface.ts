@@ -24,6 +24,7 @@ export interface IWork {
   readonly type: WORK_TYPE
   readonly urlSlug: string
   readonly titleEn: string
+  readonly titleRomaji: string
   readonly titleJp: string
   readonly titleSynonyms: string[]
   readonly synopsis: string

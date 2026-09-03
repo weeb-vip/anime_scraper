@@ -26,6 +26,7 @@ import {
 } from './relatedEntries'
 import {
   readSidebar,
+  readRomajiTitle,
   rowHrefs,
   rowText,
   rowList,
@@ -857,18 +858,40 @@ export class MyanimelistService {
 
     const rows: SidebarRow[] = await page.evaluate(readSidebar)
 
-    const titleHeader: string = await ClusterManager.pageFindOne(
-      page,
-      '.title-name.h1_bold_none',
-      'textContent',
-    )
-    const titleEn: string = rowText(rows, 'english') || titleHeader
+    // The page heading, read structurally -- see readRomajiTitle. It replaces
+    // `.title-name.h1_bold_none`, which is the *anime* page's selector: a manga
+    // page carries no element of that class, so this read returned null on
+    // every manga ever scraped and the romanised title -- the only name MAL
+    // always shows -- went nowhere.
+    let titleRomaji: string = await page.evaluate(readRomajiTitle)
+    if (!titleRomaji) {
+      // og:title carries the same string and lives in <head>, so it survives a
+      // partial page load -- worth having when load timeouts are routine.
+      const ogTitle: string = await ClusterManager.pageFindOne(
+        page,
+        'meta[property="og:title"]',
+        'content',
+      )
+      titleRomaji = ogTitle ? ogTitle.trim() : null
+    }
+
+    // Falls back to the heading, the same way scrapeAnimePage does with
+    // `res['english'] = res['english'] || titleHeader`. MAL's heading is the
+    // name the page is actually titled by -- "Vista Da Gigantessa" -- and a
+    // row whose only name is in kana is unslugable, unsearchable and unlinkable.
+    // Keeping the fallback is what leaves `anime` with 3 uuid slugs out of
+    // 29,725 where `work` had 44,591 out of 81,213.
+    //
+    // titleRomaji keeps the unambiguous copy regardless, so a work with a real
+    // English title still records both names rather than losing one to the
+    // other.
+    const titleEn: string = rowText(rows, 'english') || titleRomaji
     const titleJp: string = rowText(rows, 'japanese')
 
-    // The same guard scrapeAnimePage uses: a page with neither title did not
+    // The same guard scrapeAnimePage uses: a page with no title at all did not
     // load properly, and retrying is better than writing an empty row.
     if (!titleEn && !titleJp) {
-      throw new Error('No english or japanese title, should retry')
+      throw new Error('No title of any kind, should retry')
     }
 
     let imageUrl: string = await ClusterManager.pageFindOne(
@@ -909,6 +932,7 @@ export class MyanimelistService {
       malId: malIdFromUrl(sanitizedURL),
       type: toWorkType(rowText(rows, 'type')),
       titleEn,
+      titleRomaji,
       titleJp,
       // Synonyms are the one list MAL leaves as plain comma-separated text.
       titleSynonyms: cleanScrapedList(
