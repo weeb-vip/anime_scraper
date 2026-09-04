@@ -21,27 +21,17 @@ import { ScraperService } from './scraper.service'
           filename: 'error.log',
           level: 'error',
         }),
-        new transports.Console({
-          level: 'warn',
-          format: format.combine(
-            alignColorsAndTime(ScraperModule.name, 'yellow'),
-          ),
-        }),
-        new transports.Console({
-          level: 'info',
-          format: format.combine(
-            alignColorsAndTime(ScraperModule.name, 'blue'),
-          ),
-        }),
-        new transports.Console({
-          level: 'error',
-          format: format.combine(alignColorsAndTime(ScraperModule.name, 'red')),
-        }),
+        // One console transport, not four.
+        //
+        // A winston transport emits every level at or below its own, so the
+        // previous set -- warn, info, error and debug consoles -- printed an
+        // info line twice, a warning three times and an error four times. They
+        // existed to colour each level differently; alignColorsAndTime now
+        // picks the colour from the level itself, which is the same result
+        // from one transport.
         new transports.Console({
           level: 'debug',
-          format: format.combine(
-            alignColorsAndTime(ScraperModule.name, 'magenta'),
-          ),
+          format: format.combine(alignColorsAndTime(ScraperModule.name)),
         }),
       ],
     }),
