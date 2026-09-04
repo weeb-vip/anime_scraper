@@ -47,16 +47,16 @@ export class Work {
   @Column({ name: 'url_slug', nullable: true })
   urlSlug: string
 
-  @Column({ name: 'title_en', nullable: true })
+  @Column({ name: 'title_en', nullable: true, type: 'text' })
   titleEn: string
 
   // The romanised Japanese title, from the page heading. Distinct from titleEn:
   // "Karakai Jouzu no Takagi-san" and "Teasing Master Takagi-san" are both real
   // and a row can carry both. This is the only one of the three MAL always has.
-  @Column({ name: 'title_romaji', nullable: true })
+  @Column({ name: 'title_romaji', nullable: true, type: 'text' })
   titleRomaji: string
 
-  @Column({ name: 'title_jp', nullable: true })
+  @Column({ name: 'title_jp', nullable: true, type: 'text' })
   titleJp: string
 
   @Column('text', { name: 'title_synonyms', nullable: true, transformer: jsonArray })
