@@ -47,10 +47,10 @@ export class Work {
   @Column({ name: 'url_slug', nullable: true })
   urlSlug: string
 
-  @Column({ name: 'title_en', nullable: true })
+  @Column({ name: 'title_en', nullable: true, type: 'text' })
   titleEn: string
 
-  @Column({ name: 'title_jp', nullable: true })
+  @Column({ name: 'title_jp', nullable: true, type: 'text' })
   titleJp: string
 
   @Column('text', { name: 'title_synonyms', nullable: true, transformer: jsonArray })
