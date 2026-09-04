@@ -45,6 +45,35 @@ export function readSidebar(): SidebarRow[] {
 }
 
 /** The anchor hrefs on a row, paired with the text rowList returns. */
+// Runs in the page. Returns the romanised title from the heading, or null.
+//
+// Only the heading's own text, not its descendants'. MAL nests the English
+// title inside the same itemprop="name" span when it has one:
+//
+//   <span itemprop="name">Karakai Jouzu no Takagi-san<br>
+//     <span class="title-english">Teasing Master Takagi-san</span></span>
+//
+// so textContent on that span returns the two names run together with no
+// separator -- "Karakai Jouzu no Takagi-sanTeasing Master Takagi-san". Reading
+// the direct child text nodes takes the romanisation alone and leaves the
+// English to the sidebar row, which is where we already read it from.
+export function readRomajiTitle(): string | null {
+  const heading: Element | null = document.querySelector(
+    '.h1-title span[itemprop="name"]',
+  )
+  if (!heading) {
+    return null
+  }
+
+  const own: string = Array.from(heading.childNodes)
+    .filter((node: ChildNode) => node.nodeType === Node.TEXT_NODE)
+    .map((node: ChildNode) => node.textContent || '')
+    .join('')
+    .trim()
+
+  return own || null
+}
+
 export function rowHrefs(rows: SidebarRow[], label: string): string[] {
   const row: SidebarRow = rows.find((r: SidebarRow) => r.label === label)
 

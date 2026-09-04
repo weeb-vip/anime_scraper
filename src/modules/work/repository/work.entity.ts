@@ -50,6 +50,12 @@ export class Work {
   @Column({ name: 'title_en', nullable: true })
   titleEn: string
 
+  // The romanised Japanese title, from the page heading. Distinct from titleEn:
+  // "Karakai Jouzu no Takagi-san" and "Teasing Master Takagi-san" are both real
+  // and a row can carry both. This is the only one of the three MAL always has.
+  @Column({ name: 'title_romaji', nullable: true })
+  titleRomaji: string
+
   @Column({ name: 'title_jp', nullable: true })
   titleJp: string
 
