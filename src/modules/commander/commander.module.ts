@@ -12,6 +12,7 @@ import { CollectMangaCommand } from './collect-manga.command'
 import { NewCommand } from './new.command'
 import { MangaCommand } from './manga.command'
 import { SeasonalCommand } from './seasonal.command'
+import { YearCommand } from './year.command'
 import { ValidateCommand } from './validate.command'
 
 import { DeduplicateCommand } from './deduplicate.command'
@@ -45,6 +46,6 @@ import { DeduplicateCommand } from './deduplicate.command'
     }),
   ],
   controllers: [],
-  providers: [NewCommand, MangaCommand, ScraperCommand, CollectCommand, CollectMangaCommand, DeduplicateCommand, SeasonalCommand, ValidateCommand],
+  providers: [NewCommand, MangaCommand, ScraperCommand, CollectCommand, CollectMangaCommand, DeduplicateCommand, SeasonalCommand, YearCommand, ValidateCommand],
 })
 export class ScraperCommandModule {}

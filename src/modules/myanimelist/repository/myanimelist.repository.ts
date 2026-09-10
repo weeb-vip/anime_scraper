@@ -119,6 +119,53 @@ export class MyanimelistlinkRepository extends Repository<MyanimelistLinks> {
     return this.findAllByType(RECORD_TYPE.Anime)
   }
 
+  /**
+   * The MAL URL of every anime whose airing window touches `year`.
+   *
+   * The list a yearly re-scrape runs on. It is built from what the catalogue
+   * already holds rather than from MAL's season pages, because those are a
+   * discovery surface and not an index: they omit entries entirely, and the
+   * collector only reads the first block of each one anyway. Anything we
+   * already know about is here no matter how it was found.
+   *
+   * "Touches the year" rather than "started in it", so a series that began in
+   * the previous autumn and is still running counts -- those are exactly the
+   * ones a season page files elsewhere. A missing end date only counts while
+   * MAL still calls the anime currently airing; without that a row with no end
+   * date and no airing status would match every year forever.
+   *
+   * Links that never resolved to an anime drop out with the join, which is
+   * correct for a refresh: there is nothing recorded yet to refresh.
+   */
+  async getAnimeLinksForYear(year: number): Promise<string[]> {
+    const start = `${year}-01-01T00:00:00Z`
+    const nextYear = `${year + 1}-01-01T00:00:00Z`
+
+    const rows: { link: string }[] = await this.query(
+      `
+      SELECT l.link
+      FROM myanimelist_link l
+      -- anime.id is uuid, the link's columns are varchar, so one side has to
+      -- be cast. Casting the uuid to text rather than the text to uuid: a
+      -- record_id that is not a well-formed uuid then simply fails to match,
+      -- where ::uuid would abort the whole query on the first bad row.
+      JOIN anime a ON a.id::text = COALESCE(l.record_id, l.anime_id)
+      WHERE l.type = $1
+        AND a.start_date IS NOT NULL
+        AND a.start_date < $3
+        AND (
+          a.start_date >= $2
+          OR a.end_date >= $2
+          OR (a.end_date IS NULL AND a.status = 'Currently Airing')
+        )
+      ORDER BY a.start_date, l.id
+      `,
+      [RECORD_TYPE.Anime, start, nextYear],
+    )
+
+    return rows.map((row: { link: string }) => row.link)
+  }
+
   async getAllNewAnime(days: number = 1): Promise<IMyanimelist[]> {
     // current date
     const today = new Date()

@@ -392,6 +392,84 @@ export class ScraperService {
     return 'ok'
   }
 
+  /**
+   * Re-scrapes every anime whose airing window touches `year`.
+   *
+   * The refresh pass. `scrape new` only ever picks up what has just been
+   * added, so an anime already in the table never gets looked at again -- and
+   * score, rank, episode count, air dates and characters all keep moving long
+   * after a title stops being new.
+   *
+   * URLs come from the catalogue, not from MAL's season pages. Those omit
+   * entries, and the seasonal collector only reads the first block of each
+   * page, so a year assembled from them is missing continuing series, ONAs,
+   * OVAs, movies and specials. Discovery of anime we have never seen is a
+   * separate job (`collect`, and the nightly `scrape new`); this one refreshes
+   * what discovery already found.
+   */
+  async scrapeAnimeForYear(
+    year: number,
+    headless: boolean,
+    limit?: number,
+    dataTypes?: string[],
+  ) {
+    this.logger.info(`Starting yearly anime re-scrape for ${year}`)
+
+    await this.puppeteerService.setup(limit || 50, headless)
+
+    this.myanimelistService.setScrapeDataTypes(dataTypes)
+
+    const taskDispatcher = async ({ page, data }: any) => {
+      if (data.type === 'characters_staff') {
+        return this.myanimelistService.scrapeCharactersAndStaff({ page, data })
+      }
+
+      return this.myanimelistService.scrapeAnimePage({ page, data })
+    }
+
+    await this.puppeteerService.getManager().task(taskDispatcher)
+
+    this.puppeteerService
+      .getManager()
+      .getCluster()
+      .on('taskerror', (err: any, data: any, willRetry: any) => {
+        if (willRetry) {
+          this.logger.warn(
+            `Encountered an error while crawling ${data}. ${err.message}\nThis job will be retried`,
+          )
+        } else {
+          this.logger.error(`Failed to crawl ${data}: ${err.message}`)
+        }
+      })
+
+    const urls: string[] = await this.myanimelistService.generateYearURLs(year)
+
+    if (urls.length === 0) {
+      this.logger.warn(
+        `No anime in the catalogue air in ${year}. Nothing to re-scrape -- ` +
+          `run \`collect\` and \`scrape new\` first if this is a fresh database.`,
+      )
+      await this.puppeteerService.getManager().close()
+
+      return 'no urls'
+    }
+
+    this.logger.info(`Re-scraping ${urls.length} anime airing in ${year}`)
+
+    // No scrape-record filter here, unlike the other crawls. Skipping URLs
+    // that have been scraped before is the whole point of those; it is the
+    // opposite of the point of this one.
+    await Promise.all(
+      urls.map((url: string) => this.puppeteerService.getManager().queue(url)),
+    )
+    await this.puppeteerService.getManager().idle()
+    await this.puppeteerService.getManager().close()
+
+    this.logger.info(`Completed yearly anime re-scrape for ${year}`)
+
+    return 'ok'
+  }
+
   async scrapeSeasonalAnime(
     seasonYear: SeasonYear,
     headless: boolean,
