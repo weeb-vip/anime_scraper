@@ -2,21 +2,22 @@ import { Inject } from '@nestjs/common'
 import { Command, CommandRunner, Option } from 'nest-commander'
 import { Logger } from 'winston'
 import { ScraperService } from '../scraper/scraper.service'
-import { SeasonYear, isValidSeasonYear } from '../common/season.types'
 import { SCRAPE_DATA_TYPES } from './scrape.command'
 
-interface SeasonalCommandOptions {
-  season: SeasonYear
+interface YearCommandOptions {
   headless?: boolean
   limit?: number
   data?: string[]
 }
 
 @Command({
-  name: 'seasonal',
-  description: 'Scrape seasonal anime from MyAnimeList',
+  name: 'year',
+  arguments: '[year]',
+  description:
+    'Re-scrape every anime airing in a year. Takes a year or "current" ' +
+    '(the default), e.g. `year 2026`',
 })
-export class SeasonalCommand extends CommandRunner {
+export class YearCommand extends CommandRunner {
   constructor(
     @Inject('winston')
     private readonly logger: Logger,
@@ -27,42 +28,54 @@ export class SeasonalCommand extends CommandRunner {
 
   async run(
     passedParam: string[],
-    options?: SeasonalCommandOptions,
+    options?: YearCommandOptions,
   ): Promise<void> {
-    if (!options?.season) {
-      this.logger.error('Season parameter is required. Use format like SUMMER_2025')
+    const year = this.resolveYear(passedParam[0])
+    if (year === null) {
       return
     }
 
-    if (!isValidSeasonYear(options.season)) {
-      this.logger.error(`Invalid season format: ${options.season}. Use format like SUMMER_2025, WINTER_2024, etc.`)
-      return
+    if (options?.data && options.data.length > 0) {
+      this.logger.info(`Scraping only: ${options.data.join(', ')} (+ main)`)
     }
 
-    this.logger.info(`Starting seasonal scraping for ${options.season}`)
-    
     try {
-      if (options.data && options.data.length > 0) {
-        this.logger.info(`Scraping only: ${options.data.join(', ')} (+ main)`)
-      }
-      await this.scraperService.scrapeSeasonalAnime(
-        options.season,
-        !!options.headless,
-        options.limit,
-        options.data && options.data.length > 0 ? options.data : null,
+      await this.scraperService.scrapeAnimeForYear(
+        year,
+        !!options?.headless,
+        options?.limit,
+        options?.data && options.data.length > 0 ? options.data : null,
       )
-      this.logger.info(`Completed seasonal scraping for ${options.season}`)
     } catch (error) {
-      this.logger.error(`Error during seasonal scraping: ${error.message}`, error)
+      this.logger.error(
+        `Error during yearly re-scrape of ${year}: ${error.message}`,
+        error,
+      )
+      // exitCode rather than exit(): let the process wind down normally, but
+      // fail the pod so a broken run is visible in the CronJob's history.
+      process.exitCode = 1
     }
   }
 
-  @Option({
-    flags: '-s, --season <season>',
-    description: 'Season to scrape (e.g., SUMMER_2025, WINTER_2024)',
-  })
-  getSeason(val: string): SeasonYear {
-    return val as SeasonYear
+  // Resolves the positional argument, or null (having logged why) when it is
+  // not a year. Absent and 'current' both mean this year, in UTC -- so a cron
+  // can pass a fixed argument and still roll over every January.
+  private resolveYear(passed?: string): number | null {
+    if (passed === undefined || passed === 'current') {
+      return new Date().getUTCFullYear()
+    }
+
+    const year = parseInt(passed, 10)
+    if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+      this.logger.error(
+        `Invalid year: ${passed}. Pass a year like 2026, 'current', or ` +
+          `nothing at all for the current year.`,
+      )
+
+      return null
+    }
+
+    return year
   }
 
   @Option({
@@ -107,6 +120,7 @@ export class SeasonalCommand extends CommandRunner {
           `Valid: ${SCRAPE_DATA_TYPES.join(', ')}`,
       )
     }
+
     return valid
   }
 }

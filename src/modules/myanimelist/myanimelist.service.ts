@@ -330,6 +330,17 @@ export class MyanimelistService {
     )
   }
 
+  /**
+   * Every anime URL the catalogue holds for a year, for a re-scrape of it.
+   *
+   * Deliberately not built from `/anime/season/<year>/<season>`: see
+   * getAnimeLinksForYear for why the season pages cannot stand in for the
+   * year.
+   */
+  async generateYearURLs(year: number): Promise<string[]> {
+    return this.myanimelistlinkRepo.getAnimeLinksForYear(year)
+  }
+
   generateSeasonalURL(seasonYear: SeasonYear): string {
     const { season, year } = parseSeasonYear(seasonYear)
     return `${this.baseURL}/anime/season/${year}/${season}`
