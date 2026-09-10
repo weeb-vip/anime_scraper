@@ -64,6 +64,12 @@ npm run start scrape -s myanimelist -f urls.json
 # Scrape only new anime from last N days
 npm run start scrape -s myanimelist -n -d 7
 
+# Scrape one season
+npm run start seasonal --season SUMMER_2025 --headless --limit=1
+
+# Scrape all four seasons of a year (--year with no value = the current year)
+npm run start seasonal --year current --headless --limit=1
+
 # Collect data using puppeteer cluster
 npm run start collect
 
@@ -81,7 +87,7 @@ npm run start deduplicate
 - **Cluster management**: Puppeteer-cluster for concurrent browser operations
 
 ### Key Modules
-- `commander/`: CLI command definitions (scrape, collect, deduplicate, new)
+- `commander/`: CLI command definitions (scrape, collect, deduplicate, new, seasonal)
 - `scraper/`: Core scraping service orchestration
 - `anime/`: Anime data management (entities, repositories, services)
 - `myanimelist/` & `anidb/`: Site-specific scraping implementations
